@@ -59,10 +59,13 @@ beforeEach(async () => {
 
 describe("CRM: filtros del listado", () => {
   it("búsqueda, calificación, desarrollo, vendedor, etapa, origen y fechas", async () => {
+    await env.DB.prepare("UPDATE prospects SET student_name = 'Sofía', education_level = 'secundaria' WHERE id = 'p4'").run();
     const laura = await login("laura@x.mx");
     const ids = async (qs: string) => ((await (await laura(`/prospects?${qs}`)).json()) as { id: string }[]).map((p) => p.id).sort();
     expect(await ids("q=fernanda")).toEqual(["p2"]);
     expect(await ids("q=999111-0004")).toEqual(["p4"]); // por teléfono, aunque traiga guiones
+    expect(await ids("q=Sofía")).toEqual(["p4"]); // búsqueda por estudiante para admisiones
+    expect(await ids("educationLevel=secundaria&stage=new")).toEqual(["p4"]);
     expect(await ids("temperature=caliente")).toEqual(["p2"]);
     expect(await ids("temperature=listo")).toEqual(["p1"]);
     expect(await ids("development=dev-almendros")).toEqual(["p1", "p2"]);

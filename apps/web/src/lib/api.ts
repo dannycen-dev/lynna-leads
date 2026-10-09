@@ -78,6 +78,7 @@ export type ProspectFilters = {
   development?: string;
   temperature?: "frio" | "tibio" | "caliente" | "listo";
   stage?: string;
+  educationLevel?: "secundaria" | "preparatoria";
   owner?: string;
   source?: "whatsapp" | "simulator";
   from?: string;

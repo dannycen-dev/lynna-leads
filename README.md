@@ -4,13 +4,13 @@ Prueba de concepto de atención a familias interesadas en secundaria y preparato
 
 ## Qué muestra la demo
 
-- CRM de familias con canal de origen, nivel y grado de interés, etapa, notas y próximo contacto.
-- Tablero con embudo, contactos nuevos y seguimientos pendientes.
-- Simulador de WhatsApp con respuestas del asistente basadas en contenido aprobado.
+- CRM de admisiones con filtros por etapa y nivel, canal de origen, grado de interés, notas y próximo contacto.
+- Tablero y reportes en vivo con embudo, contactos nuevos en 48 horas, fuentes de captación y seguimientos pendientes.
+- Simulador de WhatsApp con respuestas del asistente basadas en contenido aprobado, opciones rápidas y envío de una guía visual o PDF cuando se solicitan.
 - Derivación al equipo humano de consultas sobre precios, exámenes, inscripción y visitas al campus.
 - Base de conocimiento editable por el equipo. Datos de contacto ficticios; no se cargaron expedientes de menores.
 
-El simulador usa Workers AI. El envío y la recepción de WhatsApp están apagados hasta conectar el número de Meta y aprobar su configuración. Los seguimientos del tablero son tareas para el equipo: la demo no envía recordatorios automáticos a familias.
+El simulador usa Workers AI. El envío y la recepción de WhatsApp están apagados hasta conectar el número de Meta y aprobar su configuración. Los seguimientos del tablero son tareas para el equipo: la demo no envía recordatorios automáticos a familias. La imagen y el PDF de `apps/web/public/materiales/` son piezas conceptuales de demostración; sustituirlos por material aprobado por el CUM antes de compartirlos con familias reales. Se regeneran con `node apps/e2e/scripts/generate-admissions-materials.mjs` desde la raíz, usando Chrome y la ilustración `admissions-hero.webp`.
 
 ## Infraestructura
 
@@ -52,4 +52,4 @@ El seed es repetible y contiene solo información pública aprobada y contactos 
 
 ## Origen del alcance
 
-La demo recoge los puntos de la llamada con el CUM: respuesta inicial, identificación de nivel, seguimiento de familias, información de admisión controlada y reporte para el equipo. Antes de conectar canales reales hacen falta el número de WhatsApp Business, datos oficiales vigentes de exámenes, colegiaturas y requisitos, y validación del aviso de privacidad que utilizará el colegio.
+La demo recoge los puntos de la llamada con el CUM: respuesta inicial, identificación de nivel, seguimiento de familias, información de admisión controlada y reporte para el equipo. El alcance está resumido en [docs/cum-call-requirements.md](docs/cum-call-requirements.md). Antes de atender familias reales hacen falta la activación completa del número de WhatsApp Business, datos oficiales vigentes de exámenes, colegiaturas y requisitos, y validación del aviso de privacidad que utilizará el colegio.

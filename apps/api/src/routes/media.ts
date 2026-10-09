@@ -111,9 +111,18 @@ export async function deleteMedia<E extends { Bindings: Env }>(
 // Lectura pública por ID (UUID no adivinable): es material comercial que se envía a prospectos.
 export const publicMedia = new Hono<{ Bindings: Env }>();
 
+// Material conceptual de la demo CUM. Los IDs estables permiten registrar lo que vio la familia
+// en messages.mediaId sin mezclar estos archivos con las fotos de lotes del producto original.
+const admissionsMaterials: Record<string, string> = {
+  "cum-guia-visual-demo": "/materiales/guia-admisiones-demo.png",
+  "cum-guia-pdf-demo": "/materiales/guia-admisiones-demo.pdf",
+};
+
 publicMedia.get("/:mediaId", async (c) => {
-  if (!c.env.MEDIA) return storageUnavailable(c);
   const id = c.req.param("mediaId");
+  const demoPath = admissionsMaterials[id];
+  if (demoPath) return c.env.ASSETS.fetch(new Request(new URL(demoPath, c.req.url)));
+  if (!c.env.MEDIA) return storageUnavailable(c);
   if (!z.uuid().safeParse(id).success) return c.notFound();
 
   const row = await getDb(c.env.DB).select({ r2Key: lotMedia.r2Key }).from(lotMedia).where(eq(lotMedia.id, id)).get();

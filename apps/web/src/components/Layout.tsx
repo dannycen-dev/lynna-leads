@@ -1,6 +1,8 @@
 import {
   BookOpen,
+  BarChart3,
   Bot,
+  ContactRound,
   Home,
   LogOut,
   Menu,
@@ -21,7 +23,8 @@ const NAV: { section?: string; items: NavItem[] }[] = [
   {
     section: "Admisiones",
     items: [
-      { to: "/admisiones", label: "Familias interesadas", icon: <Users size={18} /> },
+      { to: "/admisiones", label: "CRM de admisiones", icon: <ContactRound size={18} /> },
+      { to: "/reportes", label: "Reportes", icon: <BarChart3 size={18} /> },
       { to: "/agente", label: "Probar a Lynna", icon: <Bot size={18} /> },
       { to: "/conocimiento", label: "Información aprobada", icon: <BookOpen size={18} /> },
     ],

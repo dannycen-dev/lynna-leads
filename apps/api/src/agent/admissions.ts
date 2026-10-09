@@ -5,6 +5,7 @@ import { isOptOut } from "./intent";
 import { OPT_OUT_REPLY } from "./prompt";
 import type { LlmClient } from "./llm";
 import type { AgentResult, HistoryMessage } from "./runner";
+import type { Attachment } from "./tools";
 
 export const ADMISSIONS_PROMPT_VERSION = "cum-admisiones-2026-10-09.1";
 const TWO_DAYS = 48 * 60 * 60 * 1000;
@@ -23,6 +24,21 @@ export function admissionInterest(message: string) {
 export function needsAdmissionsTeam(message: string) {
   const text = normalize(message);
   return /\b(visitar|visita|recorrido|conocer (el|la) (colegio|campus|escuela)|hablar con (una? |el |la )?(persona|asesor|asesora)|inscribir|inscripcion|costo|colegiatura|precio|examen|fecha)\b/.test(text);
+}
+
+/** Solo se ofrecen piezas conceptuales de la demo cuando la familia pide material. */
+export function admissionsMaterial(message: string): Attachment[] {
+  const text = normalize(message);
+  if (/\b(pdf|folleto|brochure|documento|guia de admisiones)\b/.test(text)) return [{
+    kind: "document", mediaId: "cum-guia-pdf-demo", mime: "application/pdf",
+    caption: "Guía inicial de admisiones · material de demostración; el CUM confirmará los datos vigentes.",
+    filename: "Guia-admisiones-CUM-demo.pdf",
+  }];
+  if (/\b(foto|fotos|imagen|imagenes|flyer|cartel|material visual)\b/.test(text)) return [{
+    kind: "image", mediaId: "cum-guia-visual-demo", mime: "image/png",
+    caption: "Guía visual de admisiones · ilustración conceptual y material de demostración.",
+  }];
+  return [];
 }
 
 /** Respuesta de admisiones: contexto aprobado, registro mínimo y traspaso a una persona. */
@@ -46,6 +62,7 @@ export async function runAdmissionsAgent(input: {
   }
 
   const level = admissionInterest(message);
+  const attachments = admissionsMaterial(message);
   const now = Date.now();
   await input.db.update(prospects).set({
     ...(level ? { educationLevel: level } : {}),
@@ -111,5 +128,13 @@ export async function runAdmissionsAgent(input: {
     reply += `\n\nAviso de privacidad: ${input.tenant.privacyNoticeUrl}`;
     await input.db.update(prospects).set({ privacyNoticeAt: now }).where(eq(prospects.id, input.prospect.id));
   }
-  return { reply, draft, toolTrace: [], blocked, attachments: [], modelsUsed: deterministic ? [] : [model], neurons, latencyMs: Date.now() - started, escalation, fallback, deterministic };
+  if (attachments.length) reply += "\n\nTe comparto una guía inicial de demostración. El equipo del CUM confirmará los detalles vigentes.";
+  if (!level && !input.prospect.educationLevel) attachments.push({
+    kind: "buttons", body: "¿Qué nivel les interesa?", buttons: [
+      { title: "Secundaria", reply: "Me interesa secundaria" },
+      { title: "Preparatoria", reply: "Me interesa preparatoria" },
+      { title: "Hablar con asesor", reply: "Quiero hablar con un asesor" },
+    ],
+  });
+  return { reply, draft, toolTrace: [], blocked, attachments, modelsUsed: deterministic ? [] : [model], neurons, latencyMs: Date.now() - started, escalation, fallback, deterministic };
 }

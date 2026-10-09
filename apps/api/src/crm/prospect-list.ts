@@ -17,6 +17,7 @@ export const prospectFilters = z.object({
   development: z.string().max(80).optional(), // id del desarrollo de interés, o "none"
   temperature: z.enum(["frio", "tibio", "caliente", "listo"]).optional(),
   stage: z.enum(PROSPECT_STAGES).optional(),
+  educationLevel: z.enum(["secundaria", "preparatoria"]).optional(),
   owner: z.string().max(80).optional(), // id del vendedor, o "none"
   source: z.enum(["whatsapp", "simulator"]).optional(),
   from: z.string().regex(ISO).optional(), // fecha de primer contacto (hora local de la desarrolladora)
@@ -45,6 +46,7 @@ export function prospectWhere(tenant: Pick<typeof tenants.$inferSelect, "id" | "
       ? or(
           like(prospects.name, `%${q}%`),
           like(prospects.profileName, `%${q}%`),
+          like(prospects.studentName, `%${q}%`),
           like(prospects.email, `%${q}%`),
           digits.length >= 4 ? like(prospects.phone, `%${digits}%`) : undefined,
         )
@@ -52,6 +54,7 @@ export function prospectWhere(tenant: Pick<typeof tenants.$inferSelect, "id" | "
     f.development === "none" ? isNull(prospects.interestDevelopmentId) : f.development ? eq(prospects.interestDevelopmentId, f.development) : undefined,
     range ? and(gte(prospects.score, range[0]), lt(prospects.score, range[1])) : undefined,
     f.stage ? eq(prospects.stage, f.stage) : undefined,
+    f.educationLevel ? eq(prospects.educationLevel, f.educationLevel) : undefined,
     f.owner === "none" ? isNull(prospects.assignedUserId) : f.owner ? eq(prospects.assignedUserId, f.owner) : undefined,
     f.source ? eq(prospects.source, f.source) : undefined,
     f.from ? gte(prospects.createdAt, localToEpoch(f.from, 0, tenant.timezone)) : undefined,

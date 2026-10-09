@@ -8,7 +8,7 @@ import { Cuenta, ForcedPasswordChange } from "./pages/Cuenta";
 import { Usuarios } from "./pages/Usuarios";
 import { Conocimiento } from "./pages/Conocimiento";
 import { Login } from "./pages/Login";
-import { AdmissionsDashboard, AdmissionsDetail, AdmissionsLeads, AdmissionsSimulator } from "./pages/Admisiones";
+import { AdmissionsDashboard, AdmissionsDetail, AdmissionsLeads, AdmissionsReports, AdmissionsSimulator } from "./pages/Admisiones";
 import { SessionProvider, useSession } from "./lib/session";
 import "./styles/app.css";
 
@@ -58,6 +58,7 @@ const router = createBrowserRouter([
       { index: true, element: <AdmissionsDashboard /> },
       { path: "admisiones", element: <AdmissionsLeads /> },
       { path: "admisiones/:id", element: <AdmissionsDetail /> },
+      { path: "reportes", element: <AdmissionsReports /> },
       { path: "agente", element: <AdmissionsSimulator /> },
       { path: "conocimiento", element: <Conocimiento /> },
       { path: "usuarios", element: <Usuarios /> },
