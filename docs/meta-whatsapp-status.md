@@ -16,7 +16,7 @@ El dominio `31rooms.com` (Meta domain ID `1417281106559810`) está **Verificado*
 
 La consulta `GET /4638362863156897?fields=health_status` informa:
 
-- `141006`: la API de salud informa un error de pago. La cuenta de facturación **Lynna Leads** (`payment_account_id=2112386169378291`, vinculada al asset WABA `4638362863156897`) muestra **«No agregaste ningún método de pago»**. El método que se había visto como predeterminado no está asociado a esta cuenta concreta.
+- `141006`: la API de salud sigue informando un error de pago. La cuenta de facturación **Lynna Leads** (`payment_account_id=2112386169378291`, vinculada al asset WABA `4638362863156897`) mostró inicialmente **«No agregaste ningún método de pago»**. El propietario indicó después que agregó el pago en esa cuenta; falta confirmar que Meta lo haya aplicado, pues `health_status` aún muestra este error.
 - `141008`: la cuenta WhatsApp no está activa; Meta indica contactar a soporte de WhatsApp para activarla.
 
 El portafolio y la app ahora figuran `AVAILABLE`, pero la WABA sigue `BLOCKED` y el número `PENDING`. La cuenta de pago también muestra nombre comercial `-` y divisa vacía. La sesión de Meta abierta mostró «No tienes acceso a la cuenta de WhatsApp Business 4638362863156897» en WhatsApp Manager; hay que revisar permisos de la persona que administra Lynna.
