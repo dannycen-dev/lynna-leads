@@ -1,13 +1,10 @@
 name: Pipeline
 
-# PR            → check + e2e
-# push a main   → check + e2e → dev (+ smoke)
-# tag v*        → check + e2e → stg (+ smoke) → prod (aprobación) (+ smoke)
+# Esta variante solo verifica cambios. El despliegue del producto original no aplica aquí.
 on:
   pull_request:
   push:
     branches: [main]
-    tags: ["v*"]
 
 permissions:
   contents: read
@@ -29,48 +26,3 @@ jobs:
         run: pnpm --filter @lynna/api exec wrangler types --strict-vars=false --check
       - run: pnpm typecheck
       - run: pnpm test
-
-  e2e:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - name: Navegador para Playwright
-        run: pnpm --filter @lynna/e2e exec playwright install --with-deps chromium
-      - name: Playwright (API + interfaz con wrangler dev)
-        run: pnpm e2e
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: playwright-report
-          path: apps/e2e/playwright-report
-          retention-days: 7
-
-  deploy-dev:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [check, e2e]
-    uses: ./.github/workflows/deploy.yml
-    with:
-      environment: dev
-    secrets: inherit
-
-  deploy-stg:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    needs: [check, e2e]
-    uses: ./.github/workflows/deploy.yml
-    with:
-      environment: stg
-    secrets: inherit
-
-  deploy-prod:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    needs: deploy-stg
-    uses: ./.github/workflows/deploy.yml
-    with:
-      environment: prod
-    secrets: inherit

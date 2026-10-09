@@ -1,18 +1,14 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  // Nivel superior = LOCAL (`wrangler dev`). Los entornos remotos están en "env":
-  //   dev  → lynna-api-dev   https://devlynna.igniastudio.mx  (se despliega solo al hacer push a main)
-  //   stg  → lynna-api-stg   https://stglynna.igniastudio.mx  (tag v*)
-  //   prod → lynna-api-prod  https://lynna.igniastudio.mx     (tag v*, con aprobación manual en GitHub)
-  // Custom Domains: Cloudflare crea el DNS y el certificado. Sin *.workers.dev (una sola URL por entorno).
-  // Bindings, vars y secretos NO se heredan entre entornos: cada uno los declara completos.
-  "name": "lynna-api",
+  // Lynna Leads CUM, aislada de la Lynna inmobiliaria.
+  "name": "lynna-leads-cum",
   "main": "src/index.ts",
   // Debe ser <= a la fecha que soporta el workerd de wrangler Y el de vitest-pool-workers.
   "compatibility_date": "2026-08-22",
   "compatibility_flags": ["nodejs_compat"],
-  // Cuenta Cloudflare de Ignia Studio. Fijarla evita desplegar por error en otra cuenta.
-  "account_id": "76d4525e9674ff3e597084e012f8619e", // Ignia Studio
+  // Cuenta 31 Rooms: perfil Wrangler de soporte.31rooms@gmail.com.
+  "account_id": "ba148f66229ed4c38e9129f338324cfd",
+  "routes": [{ "pattern": "cum.31rooms.com", "custom_domain": true }],
   "observability": { "enabled": true },
   "workers_dev": false,
   "preview_urls": false,
@@ -27,17 +23,16 @@
   },
 
   "vars": {
-    "ENVIRONMENT": "local",
-    // URL pública del entorno: Meta descarga de aquí las fotos y planos (/media/:id) que manda Lynna.
-    "PUBLIC_URL": "http://localhost:8787",
-    // Cómo se muestran los lotes encontrados: "list" (lista interactiva, se ve en celular, Web y Desktop)
-    // o "carousel" (tarjetas con foto; WhatsApp Desktop y algunas versiones de Web no lo muestran).
+    "ENVIRONMENT": "cum-demo",
+    // URL pública de esta demo.
+    "PUBLIC_URL": "https://cum.31rooms.com",
+    // Configuración heredada del formato de mensajes; WhatsApp sigue desconectado.
     "LOT_CARDS": "list",
     "WHATSAPP_GRAPH_VERSION": "v23.0",
     // Ventana para agrupar ráfagas de mensajes del mismo prospecto antes de responder.
     "DEBOUNCE_MS": "3000",
     // off | ack | ai — "ai" responde con el agente (Workers AI); "ack" envía un acuse fijo.
-    "AUTO_REPLY_MODE": "ai",
+    "AUTO_REPLY_MODE": "off",
     // Modelo de Workers AI (con function calling). Se elige con `pnpm eval:agent`.
     "AI_MODEL": "@cf/google/gemma-4-26b-a4b-it",
     // Respaldo si el principal falla (caída o límite). Gemma 4: 10/10 en eval; Mistral Small: 5/10 pero rápido y disponible.
@@ -59,24 +54,24 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "lynna",
+      "database_name": "lynna-leads-cum",
       // Solo local: la D1 de wrangler dev vive en .wrangler/state.
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "17ef7f42-a63d-4c9d-b80d-c351463e581c",
       "migrations_dir": "migrations"
     }
   ],
 
-  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "lynna-media" }],
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "lynna-leads-cum-media" }],
 
   "queues": {
-    "producers": [{ "binding": "WA_INBOUND", "queue": "lynna-wa-inbound" }],
+    "producers": [{ "binding": "WA_INBOUND", "queue": "lynna-leads-cum-inbound" }],
     "consumers": [
       {
-        "queue": "lynna-wa-inbound",
+        "queue": "lynna-leads-cum-inbound",
         "max_batch_size": 10,
         "max_batch_timeout": 2,
         "max_retries": 5,
-        "dead_letter_queue": "lynna-wa-inbound-dlq"
+        "dead_letter_queue": "lynna-leads-cum-inbound-dlq"
       }
     ]
   },
@@ -86,148 +81,6 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ConversationDO"] }],
 
-  // Libera apartados vencidos (lots.reserved_until).
-  "triggers": { "crons": ["*/15 * * * *"] },
-
-  "env": {
-    "dev": {
-      "name": "lynna-api-dev",
-      "workers_dev": false,
-      "routes": [{ "pattern": "devlynna.igniastudio.mx", "custom_domain": true }],
-      "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "lynna-media-dev" }],
-      "vars": {
-        "ENVIRONMENT": "dev",
-        "PUBLIC_URL": "https://devlynna.igniastudio.mx",
-        "LOT_CARDS": "list",
-        "WHATSAPP_GRAPH_VERSION": "v23.0",
-        "DEBOUNCE_MS": "3000",
-        "AUTO_REPLY_MODE": "ai",
-        "AI_MODEL": "@cf/google/gemma-4-26b-a4b-it",
-        "AI_MODEL_FALLBACK": "@cf/mistralai/mistral-small-3.1-24b-instruct",
-        "AI_THINKING": "off",
-        "AI_GATEWAY_ID": ""
-      },
-      "ai": { "binding": "AI" },
-      "secrets": {
-        "required": ["WHATSAPP_APP_SECRET", "WHATSAPP_VERIFY_TOKEN", "WHATSAPP_ACCESS_TOKEN", "ADMIN_API_TOKEN"]
-      },
-      "d1_databases": [
-        {
-          "binding": "DB",
-          "database_name": "lynna-dev",
-          "database_id": "1166f8cd-687d-48ec-9caa-34ff80bf3e3e",
-          "migrations_dir": "migrations"
-        }
-      ],
-      // R2 pendiente: activarlo en el dashboard de la cuenta de Ignia y crear lynna-media-{dev,stg,prod}.
-      "queues": {
-        "producers": [{ "binding": "WA_INBOUND", "queue": "lynna-wa-inbound-dev" }],
-        "consumers": [
-          {
-            "queue": "lynna-wa-inbound-dev",
-            "max_batch_size": 10,
-            "max_batch_timeout": 2,
-            "max_retries": 5,
-            "dead_letter_queue": "lynna-wa-inbound-dlq-dev"
-          }
-        ]
-      },
-      "durable_objects": {
-        "bindings": [{ "name": "CONVERSATION", "class_name": "ConversationDO" }]
-      },
-      "triggers": { "crons": ["*/15 * * * *"] }
-    },
-
-    "stg": {
-      "name": "lynna-api-stg",
-      "workers_dev": false,
-      "routes": [{ "pattern": "stglynna.igniastudio.mx", "custom_domain": true }],
-      "vars": {
-        "ENVIRONMENT": "stg",
-        "PUBLIC_URL": "https://stglynna.igniastudio.mx",
-        "LOT_CARDS": "list",
-        "WHATSAPP_GRAPH_VERSION": "v23.0",
-        "DEBOUNCE_MS": "3000",
-        "AUTO_REPLY_MODE": "ai",
-        "AI_MODEL": "@cf/google/gemma-4-26b-a4b-it",
-        "AI_MODEL_FALLBACK": "@cf/mistralai/mistral-small-3.1-24b-instruct",
-        "AI_THINKING": "off",
-        "AI_GATEWAY_ID": ""
-      },
-      "ai": { "binding": "AI" },
-      "secrets": {
-        "required": ["WHATSAPP_APP_SECRET", "WHATSAPP_VERIFY_TOKEN", "WHATSAPP_ACCESS_TOKEN", "ADMIN_API_TOKEN"]
-      },
-      "d1_databases": [
-        {
-          "binding": "DB",
-          "database_name": "lynna-stg",
-          "database_id": "d9c40d11-fe9a-4e08-b700-d88842083cc0",
-          "migrations_dir": "migrations"
-        }
-      ],
-      "queues": {
-        "producers": [{ "binding": "WA_INBOUND", "queue": "lynna-wa-inbound-stg" }],
-        "consumers": [
-          {
-            "queue": "lynna-wa-inbound-stg",
-            "max_batch_size": 10,
-            "max_batch_timeout": 2,
-            "max_retries": 5,
-            "dead_letter_queue": "lynna-wa-inbound-dlq-stg"
-          }
-        ]
-      },
-      "durable_objects": {
-        "bindings": [{ "name": "CONVERSATION", "class_name": "ConversationDO" }]
-      },
-      "triggers": { "crons": ["*/15 * * * *"] }
-    },
-
-    "prod": {
-      "name": "lynna-api-prod",
-      "workers_dev": false,
-      "routes": [{ "pattern": "lynna.igniastudio.mx", "custom_domain": true }],
-      "vars": {
-        "ENVIRONMENT": "prod",
-        "PUBLIC_URL": "https://lynna.igniastudio.mx",
-        "LOT_CARDS": "list",
-        "WHATSAPP_GRAPH_VERSION": "v23.0",
-        "DEBOUNCE_MS": "3000",
-        "AUTO_REPLY_MODE": "off",
-        "AI_MODEL": "@cf/google/gemma-4-26b-a4b-it",
-        "AI_MODEL_FALLBACK": "@cf/mistralai/mistral-small-3.1-24b-instruct",
-        "AI_THINKING": "off",
-        "AI_GATEWAY_ID": ""
-      },
-      "ai": { "binding": "AI" },
-      "secrets": {
-        "required": ["WHATSAPP_APP_SECRET", "WHATSAPP_VERIFY_TOKEN", "WHATSAPP_ACCESS_TOKEN", "ADMIN_API_TOKEN"]
-      },
-      "d1_databases": [
-        {
-          "binding": "DB",
-          "database_name": "lynna-prod",
-          "database_id": "7acf9dde-9644-48ff-9130-61808dde0c0e",
-          "migrations_dir": "migrations"
-        }
-      ],
-      "queues": {
-        "producers": [{ "binding": "WA_INBOUND", "queue": "lynna-wa-inbound-prod" }],
-        "consumers": [
-          {
-            "queue": "lynna-wa-inbound-prod",
-            "max_batch_size": 10,
-            "max_batch_timeout": 2,
-            "max_retries": 5,
-            "dead_letter_queue": "lynna-wa-inbound-dlq-prod"
-          }
-        ]
-      },
-      "durable_objects": {
-        "bindings": [{ "name": "CONVERSATION", "class_name": "ConversationDO" }]
-      },
-      "triggers": { "crons": ["*/15 * * * *"] }
-    }
-  }
+  // Mantiene sesiones; los seguimientos CUM se revisan en el tablero.
+  "triggers": { "crons": ["*/15 * * * *"] }
 }

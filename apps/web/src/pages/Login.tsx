@@ -30,10 +30,11 @@ export function Login() {
       <form className="card login__card" onSubmit={submit} noValidate>
         <div className="login__brand">
           <img src="/lynna-logo.png" alt="" />
-          <h1>Lynna</h1>
+          <h1>Lynna Leads</h1>
           <p className="muted" style={{ margin: 0 }}>
-            CRM y cotizador para desarrolladoras inmobiliarias
+            Admisiones · Centro Universitario Montejo
           </p>
+          <img className="login__cum-logo" src="/cum-logo.png" alt="Centro Universitario Montejo" />
         </div>
         <div className="stack">
           <div className="field">
@@ -46,7 +47,7 @@ export function Login() {
               inputMode="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="tu@empresa.mx"
+              placeholder="tu@cum.edu.mx"
               required
               autoFocus
             />
@@ -79,7 +80,7 @@ export function Login() {
             {pending ? "Entrando…" : "Entrar"}
           </button>
           <p className="field__hint" style={{ textAlign: "center", margin: 0 }}>
-            ¿Sin acceso? Pídelo al administrador de tu empresa.
+            ¿Sin acceso? Pídelo al equipo administrador de la demo.
           </p>
         </div>
       </form>

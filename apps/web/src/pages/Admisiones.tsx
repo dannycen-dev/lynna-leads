@@ -1,0 +1,120 @@
+import { useMemo, useState, type FormEvent } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate, useParams } from "react-router";
+import { ArrowLeft, ArrowRight, Bot, CalendarClock, GraduationCap, Mail, MessageCircle, Plus, Search, Send, Users } from "lucide-react";
+import { Empty, ErrorAlert, PageHeader, Spinner } from "../components/ui";
+import { useAddNote, useChangeStage, useProspect, useProspects, useSimulatorHistory, useSimulatorReset, useSimulatorSend } from "../lib/api";
+import { apiFetch } from "../lib/api-client";
+import { useSession } from "../lib/session";
+import type { Prospect, ProspectStage } from "../lib/types";
+import "../styles/admisiones.css";
+
+const STAGES: { value: ProspectStage; label: string }[] = [
+  { value: "new", label: "Nuevo" },
+  { value: "qualified", label: "Interés identificado" },
+  { value: "appointment", label: "Visita por coordinar" },
+  { value: "visited", label: "Conoció el campus" },
+  { value: "won", label: "Inscripción confirmada" },
+  { value: "lost", label: "Sin continuidad" },
+];
+const CHANNEL: Record<string, string> = { whatsapp: "WhatsApp", correo: "Correo", web: "Sitio web", telefono: "Teléfono", presencial: "Presencial" };
+const date = (ms: number) => new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Merida" }).format(new Date(ms));
+const stageName = (value: string) => STAGES.find((item) => item.value === value)?.label ?? "En seguimiento";
+const nameOf = (lead: Prospect) => lead.name ?? lead.profileName ?? "Familia sin nombre";
+const phoneOf = (phone: string) => /^\d{10,15}$/.test(phone) ? `+${phone}` : "Sin teléfono";
+
+type Report = { total: number; newLast48h: number; followupsDue: number; byStage: Record<string, number>; byChannel: Record<string, number>; byLevel: Record<string, number> };
+
+function useAdmissionsReport() {
+  const { tenant } = useSession();
+  return useQuery({ queryKey: [tenant, "admissions-report"], queryFn: () => apiFetch<Report>(`/api/admin/tenants/${encodeURIComponent(tenant)}/admissions/report`), enabled: Boolean(tenant), refetchInterval: 30_000 });
+}
+
+export function AdmissionsDashboard() {
+  const report = useAdmissionsReport();
+  const leads = useProspects({}, 200);
+  const due = useMemo(() => (leads.data?.items ?? []).filter((lead) => lead.nextFollowupAt && lead.nextFollowupAt <= Date.now() && lead.stage !== "won" && lead.stage !== "lost").slice(0, 5), [leads.data]);
+  return <div className="page admissions-page">
+    <section className="admissions-hero">
+      <img src="/cum-logo.png" alt="Centro Universitario Montejo" />
+      <div><span className="admissions-eyebrow">LYNNA LEADS · CUM</span><h1>Admisiones con seguimiento claro</h1><p>Una vista del interés de las familias, sus conversaciones y los próximos contactos.</p></div>
+    </section>
+    <ErrorAlert error={report.error} />
+    {report.isPending ? <Spinner /> : report.data && <>
+      <div className="admissions-kpis">
+        <div className="card admissions-kpi"><Users size={19} /><span>Familias en el CRM</span><strong>{report.data.total}</strong></div>
+        <div className="card admissions-kpi"><MessageCircle size={19} /><span>Nuevas en 48 horas</span><strong>{report.data.newLast48h}</strong></div>
+        <div className="card admissions-kpi"><CalendarClock size={19} /><span>Seguimientos pendientes</span><strong>{report.data.followupsDue}</strong></div>
+        <div className="card admissions-kpi"><GraduationCap size={19} /><span>Interés en secundaria</span><strong>{report.data.byLevel.secundaria ?? 0}</strong></div>
+      </div>
+      <div className="admissions-grid">
+        <section className="card admissions-panel"><div className="admissions-panel__head"><h2>Embudo de admisiones</h2><Link to="/admisiones">Ver contactos <ArrowRight size={15} /></Link></div><div className="admissions-funnel">{STAGES.map((stage) => <div key={stage.value}><span>{stage.label}</span><div className="admissions-bar"><i style={{ width: `${report.data!.total ? Math.max(5, (report.data!.byStage[stage.value] ?? 0) / report.data!.total * 100) : 0}%` }} /></div><strong>{report.data!.byStage[stage.value] ?? 0}</strong></div>)}</div></section>
+        <section className="card admissions-panel"><div className="admissions-panel__head"><h2>Contactar hoy</h2><Link to="/admisiones">Abrir lista <ArrowRight size={15} /></Link></div>{due.length ? <div className="admissions-due">{due.map((lead) => <Link key={lead.id} to={`/admisiones/${lead.id}`}><span><strong>{nameOf(lead)}</strong><small>{lead.educationLevel ?? "Nivel por confirmar"} · {CHANNEL[lead.leadChannel ?? ""] ?? "Canal por confirmar"}</small></span><ArrowRight size={16} /></Link>)}</div> : <p className="muted">No hay seguimientos vencidos.</p>}</section>
+      </div>
+      <div className="admissions-actions"><Link className="btn btn--primary" to="/admisiones"><Users size={16} /> Abrir contactos</Link><Link className="btn" to="/agente"><Bot size={16} /> Probar asistente</Link></div>
+    </>}
+  </div>;
+}
+
+type LeadForm = { name: string; phone: string; email: string; studentName: string; educationLevel: "" | "secundaria" | "preparatoria"; targetGrade: string; leadChannel: "whatsapp" | "correo" | "web" | "telefono" | "presencial" };
+const blank: LeadForm = { name: "", phone: "", email: "", studentName: "", educationLevel: "", targetGrade: "", leadChannel: "correo" };
+
+export function AdmissionsLeads() {
+  const { tenant } = useSession();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState<LeadForm>(blank);
+  const leads = useProspects({}, 200);
+  const create = useMutation({ mutationFn: () => apiFetch<Prospect>(`/api/admin/tenants/${encodeURIComponent(tenant)}/prospects`, { method: "POST", body: JSON.stringify({ ...form, educationLevel: form.educationLevel || undefined }) }), onSuccess: (lead) => { void qc.invalidateQueries({ queryKey: [tenant] }); setOpen(false); setForm(blank); navigate(`/admisiones/${lead.id}`); } });
+  const shown = (leads.data?.items ?? []).filter((lead) => normalize(`${nameOf(lead)} ${lead.studentName ?? ""} ${lead.email ?? ""} ${lead.phone}`).includes(normalize(search)));
+  return <div className="page admissions-page">
+    <PageHeader title="Familias interesadas" subtitle="Contactos de WhatsApp, correo, web, teléfono y visitas al colegio en un solo lugar." actions={<button className="btn btn--primary" onClick={() => setOpen((value) => !value)}><Plus size={16} /> Nuevo contacto</button>} />
+    {open && <form className="card admissions-form" onSubmit={(event) => { event.preventDefault(); create.mutate(); }}>
+      <h2>Registrar familia</h2><p className="muted">Usa datos ficticios en esta prueba de concepto.</p>
+      <div className="admissions-form__grid">
+        <label>Nombre de madre, padre o tutor<input className="input" required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>
+        <label>Canal<select className="select" value={form.leadChannel} onChange={(event) => setForm({ ...form, leadChannel: event.target.value as LeadForm["leadChannel"] })}>{Object.entries(CHANNEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+        <label>Teléfono<input className="input" inputMode="tel" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} placeholder="9991234567" /></label>
+        <label>Correo<input className="input" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="familia@ejemplo.com" /></label>
+        <label>Nivel de interés<select className="select" value={form.educationLevel} onChange={(event) => setForm({ ...form, educationLevel: event.target.value as LeadForm["educationLevel"] })}><option value="">Por confirmar</option><option value="secundaria">Secundaria</option><option value="preparatoria">Preparatoria</option></select></label>
+        <label>Grado de interés<input className="input" value={form.targetGrade} onChange={(event) => setForm({ ...form, targetGrade: event.target.value })} placeholder="Ej. primero" /></label>
+      </div><ErrorAlert error={create.error} /><div className="row"><button className="btn btn--primary" disabled={create.isPending || (!form.phone && !form.email)} type="submit">{create.isPending ? "Guardando…" : "Guardar contacto"}</button><button className="btn" type="button" onClick={() => setOpen(false)}>Cancelar</button></div>
+    </form>}
+    <div className="admissions-toolbar"><Search size={17} /><input className="input" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar familia, estudiante o contacto" /><span>{shown.length} contactos</span></div>
+    <ErrorAlert error={leads.error} />{leads.isPending ? <Spinner /> : shown.length ? <div className="card admissions-table"><table><thead><tr><th>Familia</th><th>Interés</th><th>Etapa</th><th>Canal</th><th>Próximo contacto</th></tr></thead><tbody>{shown.map((lead) => <tr key={lead.id} onClick={() => navigate(`/admisiones/${lead.id}`)}><td><Link to={`/admisiones/${lead.id}`}><strong>{nameOf(lead)}</strong><small>{lead.email ?? phoneOf(lead.phone)}</small></Link></td><td>{lead.educationLevel ?? "Por confirmar"}{lead.targetGrade ? ` · ${lead.targetGrade}` : ""}</td><td><span className="admissions-stage">{stageName(lead.stage)}</span></td><td>{CHANNEL[lead.leadChannel ?? ""] ?? "Simulador"}</td><td>{lead.nextFollowupAt ? date(lead.nextFollowupAt) : "—"}</td></tr>)}</tbody></table></div> : <Empty title="No hay contactos con esta búsqueda" />}
+  </div>;
+}
+
+const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+export function AdmissionsDetail() {
+  const { id } = useParams();
+  const { tenant } = useSession();
+  const qc = useQueryClient();
+  const detail = useProspect(id);
+  const stage = useChangeStage();
+  const note = useAddNote(id ?? "");
+  const [noteText, setNoteText] = useState("");
+  const [reply, setReply] = useState("");
+  const update = useMutation({ mutationFn: (nextFollowupAt: number | null) => apiFetch(`/api/admin/tenants/${encodeURIComponent(tenant)}/prospects/${encodeURIComponent(id ?? "")}/admissions`, { method: "PATCH", body: JSON.stringify({ nextFollowupAt }) }), onSuccess: () => void qc.invalidateQueries({ queryKey: [tenant] }) });
+  const send = useMutation({ mutationFn: () => apiFetch(`/api/admin/tenants/${encodeURIComponent(tenant)}/conversations/${encodeURIComponent(detail.data?.conversation?.id ?? "")}/messages`, { method: "POST", body: JSON.stringify({ body: reply }) }), onSuccess: () => { setReply(""); void qc.invalidateQueries({ queryKey: [tenant] }); } });
+  if (detail.isPending) return <div className="page"><Spinner /></div>;
+  if (!detail.data) return <div className="page"><Empty title="Contacto no encontrado" /></div>;
+  const lead = detail.data.prospect;
+  return <div className="page admissions-page"><Link className="admissions-back" to="/admisiones"><ArrowLeft size={16} /> Volver a contactos</Link><PageHeader title={nameOf(lead)} subtitle={`${CHANNEL[lead.leadChannel ?? ""] ?? "Simulador"} · ${lead.educationLevel ?? "Nivel por confirmar"}`} />
+    <div className="admissions-grid"><section className="card admissions-panel"><h2>Seguimiento</h2><dl className="admissions-facts"><div><dt>Teléfono</dt><dd>{phoneOf(lead.phone)}</dd></div><div><dt>Correo</dt><dd>{lead.email ?? "Por confirmar"}</dd></div><div><dt>Estudiante</dt><dd>{lead.studentName ?? "Por confirmar"}</dd></div><div><dt>Grado</dt><dd>{lead.targetGrade ?? "Por confirmar"}</dd></div><div><dt>Próximo contacto</dt><dd>{lead.nextFollowupAt ? date(lead.nextFollowupAt) : "Sin fecha"}</dd></div></dl>
+      <label className="admissions-field">Etapa<select className="select" value={lead.stage} onChange={(event) => stage.mutate({ id: lead.id, stage: event.target.value as ProspectStage, ...(event.target.value === "lost" ? { reason: "Sin continuidad en la demo" } : {}) })}>{STAGES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label><ErrorAlert error={stage.error} />
+      <div className="row"><button className="btn" onClick={() => update.mutate(Date.now() + 48 * 60 * 60 * 1000)}>Contactar en 2 días</button><button className="btn" onClick={() => update.mutate(null)}>Marcar atendido</button></div><ErrorAlert error={update.error} />
+      <h3>Notas del equipo</h3><div className="admissions-notes">{detail.data.notes.map((item) => <div key={item.id}><p>{item.body}</p><small>{date(item.createdAt)} · {item.authorName ?? "Equipo"}</small></div>)}</div><form onSubmit={(event) => { event.preventDefault(); note.mutate(noteText, { onSuccess: () => setNoteText("") }); }}><textarea className="textarea" value={noteText} onChange={(event) => setNoteText(event.target.value)} placeholder="Registrar llamada, duda o siguiente paso" /><button className="btn" disabled={!noteText.trim() || note.isPending}>Guardar nota</button></form><ErrorAlert error={note.error} />
+    </section><section className="card admissions-panel"><h2>Conversación</h2>{detail.data.messages.length ? <div className="admissions-messages">{detail.data.messages.map((message) => <div className={`admissions-message admissions-message--${message.direction}`} key={message.id}><p>{message.body ?? `[${message.type}]`}</p><small>{message.author === "ai" ? "Lynna" : message.author === "user" ? "Equipo" : "Familia"} · {date(message.createdAt)}</small></div>)}</div> : <p className="muted">Este contacto todavía no tiene mensajes en Lynna.</p>}{detail.data.conversation && <form className="admissions-reply" onSubmit={(event) => { event.preventDefault(); send.mutate(); }}><textarea className="textarea" value={reply} onChange={(event) => setReply(event.target.value)} placeholder="Responder como equipo de admisiones" /><button className="btn btn--primary" disabled={!reply.trim() || send.isPending}><Send size={15} /> Enviar respuesta</button><p className="field__hint">Si la conversación es de WhatsApp, se respeta la ventana de 24 horas de Meta.</p><ErrorAlert error={send.error} /></form>}</section></div>
+  </div>;
+}
+
+const SUGGESTIONS = ["Hola, quiero información para secundaria", "¿Cuándo es el examen de admisión?", "¿Cuánto cuesta la preparatoria?", "¿Podemos conocer el colegio?"];
+export function AdmissionsSimulator() {
+  const history = useSimulatorHistory(); const send = useSimulatorSend(); const reset = useSimulatorReset(); const [text, setText] = useState("");
+  function submit(event: FormEvent) { event.preventDefault(); if (!text.trim()) return; send.mutate({ message: text.trim() }, { onSuccess: () => setText("") }); }
+  return <div className="page admissions-page"><PageHeader title="Probar a Lynna" subtitle="Simula una conversación de WhatsApp con una familia. La respuesta queda registrada en el CRM." actions={<button className="btn" onClick={() => reset.mutate()} disabled={reset.isPending}>Nueva conversación</button>} /><div className="admissions-simulator"><section className="card admissions-chat"><div className="admissions-chat__head"><Bot size={20} /><strong>Lynna · Admisiones CUM</strong><span>Simulador</span></div><div className="admissions-messages">{history.isPending ? <Spinner /> : history.data?.messages.length ? history.data.messages.map((message) => <div className={`admissions-message admissions-message--${message.direction}`} key={message.id}><p>{message.body ?? ""}</p><small>{message.direction === "in" ? "Familia" : "Lynna"} · {date(message.createdAt)}</small></div>) : <div className="admissions-chat__empty">Escribe como lo haría una familia interesada en el CUM.</div>}</div><form onSubmit={submit} className="admissions-chat__compose"><input className="input" value={text} onChange={(event) => setText(event.target.value)} placeholder="Escribe un mensaje…" /><button className="btn btn--primary" disabled={send.isPending || !text.trim()}><Send size={16} /></button></form><ErrorAlert error={send.error} /></section><aside className="card admissions-panel"><h2>Prueba estas preguntas</h2><div className="admissions-suggestions">{SUGGESTIONS.map((example) => <button className="btn" key={example} onClick={() => send.mutate({ message: example })} disabled={send.isPending}>{example}</button>)}</div><p className="muted">La asistente ofrece información aprobada y pasa fechas, costos y visitas al equipo humano. El simulador no envía mensajes reales.</p>{send.data?.prospect?.educationLevel && <div className="admissions-captured"><GraduationCap size={18} /> Interés detectado: {send.data.prospect.educationLevel}</div>}<Link className="btn" to="/admisiones"><Mail size={16} /> Revisar contactos</Link></aside></div></div>;
+}

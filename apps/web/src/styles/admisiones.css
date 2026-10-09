@@ -1,0 +1,69 @@
+.admissions-page { max-width: 1320px; }
+.navbar__brand-suffix { color: #e7c476; font-weight: 700; margin-left: 2px; }
+.login__brand .login__cum-logo { width: 54px; height: 56px; object-fit: cover; border-radius: 6px; margin-top: 12px; }
+.admissions-hero { display: flex; align-items: center; gap: 28px; padding: 28px 34px; margin-bottom: 24px; border-radius: 18px; color: #fff; background: linear-gradient(120deg, #102f4c, #194f70); box-shadow: 0 16px 38px rgba(16,47,76,.13); }
+.admissions-hero img { width: 102px; height: 106px; object-fit: cover; border-radius: 12px; }
+.admissions-hero h1 { margin: 5px 0 7px; font-size: clamp(23px, 3vw, 36px); line-height: 1.15; }
+.admissions-hero p { margin: 0; color: #e2edf4; }
+.admissions-eyebrow { color: #e8c774; font-weight: 800; font-size: 11px; letter-spacing: .14em; }
+.admissions-kpis { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; margin-bottom: 18px; }
+.admissions-kpi { display: grid; gap: 9px; padding: 20px; color: #173b59; }
+.admissions-kpi span { color: #65798a; font-size: 13px; }
+.admissions-kpi strong { font-size: 29px; line-height: 1; }
+.admissions-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; }
+.admissions-panel { padding: 22px; min-width: 0; }
+.admissions-panel h2 { font-size: 17px; margin: 0 0 18px; }
+.admissions-panel h3 { font-size: 15px; margin: 25px 0 10px; }
+.admissions-panel__head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.admissions-panel__head a { display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 700; color: #1b6585; }
+.admissions-funnel { display: grid; gap: 15px; }
+.admissions-funnel > div { display: grid; grid-template-columns: 145px minmax(0,1fr) 25px; gap: 10px; align-items: center; font-size: 12px; }
+.admissions-funnel strong { text-align: right; }
+.admissions-bar { height: 9px; background: #edf2f5; border-radius: 10px; overflow: hidden; }
+.admissions-bar i { display: block; height: 100%; border-radius: 10px; background: #bc9855; }
+.admissions-due { display: grid; gap: 4px; }
+.admissions-due a { display: flex; align-items: center; justify-content: space-between; padding: 11px 4px; color: inherit; border-bottom: 1px solid #edf1f3; }
+.admissions-due small, .admissions-table small { display: block; color: #6b7b87; margin-top: 3px; font-size: 12px; }
+.admissions-actions { display: flex; gap: 10px; margin-top: 20px; }
+.admissions-form { padding: 22px; margin: 18px 0; }
+.admissions-form h2 { margin: 0 0 5px; font-size: 19px; }
+.admissions-form__grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 15px; margin: 20px 0; }
+.admissions-form__grid label, .admissions-field { display: grid; gap: 7px; font-size: 13px; font-weight: 700; }
+.admissions-toolbar { display: flex; align-items: center; gap: 10px; margin: 20px 0 14px; }
+.admissions-toolbar .input { max-width: 440px; }
+.admissions-toolbar span { margin-left: auto; color: #667987; font-size: 13px; }
+.admissions-table { overflow-x: auto; }
+.admissions-table table { border-collapse: collapse; width: 100%; font-size: 13px; }
+.admissions-table th { text-align: left; color: #667987; padding: 14px 18px; border-bottom: 1px solid #e9eff2; white-space: nowrap; }
+.admissions-table td { padding: 16px 18px; border-bottom: 1px solid #f0f3f4; }
+.admissions-table tr:last-child td { border-bottom: 0; }
+.admissions-table tbody tr { cursor: pointer; }
+.admissions-table tbody tr:hover { background: #f7fafb; }
+.admissions-table td a { color: inherit; }
+.admissions-stage { padding: 5px 9px; background: #edf3f7; color: #285573; border-radius: 7px; white-space: nowrap; font-weight: 700; font-size: 11px; }
+.admissions-back { display: inline-flex; gap: 6px; align-items: center; margin-bottom: 20px; color: #376b89; font-weight: 700; font-size: 13px; }
+.admissions-facts { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 17px; margin: 0 0 24px; }
+.admissions-facts dt { color: #6d7d88; font-size: 12px; margin-bottom: 3px; }
+.admissions-facts dd { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+.admissions-field { margin-bottom: 16px; }
+.admissions-notes { display: grid; gap: 9px; margin-bottom: 12px; }
+.admissions-notes > div { background: #f6f9fa; border-radius: 8px; padding: 10px 12px; }
+.admissions-notes p, .admissions-message p { margin: 0 0 5px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.admissions-notes small, .admissions-message small { color: #75848f; font-size: 11px; }
+.admissions-panel .textarea { width: 100%; min-height: 75px; margin-bottom: 8px; }
+.admissions-messages { display: flex; flex-direction: column; gap: 11px; min-height: 220px; max-height: 520px; overflow-y: auto; margin-bottom: 16px; }
+.admissions-message { max-width: 85%; padding: 11px 14px; border-radius: 12px; background: #f1f5f7; font-size: 13px; }
+.admissions-message--out { align-self: flex-end; background: #e6f0eb; }
+.admissions-reply { border-top: 1px solid #e8eef1; padding-top: 15px; }
+.admissions-simulator { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(280px,1fr); gap: 18px; }
+.admissions-chat { display: flex; flex-direction: column; min-height: 540px; overflow: hidden; }
+.admissions-chat__head { display: flex; align-items: center; gap: 10px; padding: 16px 20px; color: #fff; background: #173d5a; }
+.admissions-chat__head span { margin-left: auto; font-size: 11px; opacity: .7; }
+.admissions-chat .admissions-messages { flex: 1; max-height: none; padding: 22px; margin: 0; background: #f7faf9; }
+.admissions-chat__empty { margin: auto; color: #71818a; text-align: center; }
+.admissions-chat__compose { display: flex; gap: 9px; padding: 14px; }
+.admissions-suggestions { display: grid; gap: 9px; margin-bottom: 20px; }
+.admissions-suggestions button { justify-content: flex-start; white-space: normal; text-align: left; }
+.admissions-captured { display: flex; align-items: center; gap: 8px; padding: 12px; margin: 16px 0; background: #eef6f2; border-radius: 9px; color: #175b43; font-weight: 700; }
+@media (max-width: 900px) { .admissions-kpis { grid-template-columns: repeat(2,minmax(0,1fr)); } .admissions-grid, .admissions-simulator { grid-template-columns: 1fr; } }
+@media (max-width: 580px) { .admissions-hero { padding: 20px; gap: 15px; } .admissions-hero img { width: 70px; height: 76px; } .admissions-kpis, .admissions-form__grid { grid-template-columns: 1fr; } .admissions-funnel > div { grid-template-columns: 112px minmax(0,1fr) 20px; } .admissions-facts { grid-template-columns: 1fr; } }

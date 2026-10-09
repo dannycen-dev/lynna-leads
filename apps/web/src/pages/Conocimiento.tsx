@@ -1,17 +1,17 @@
 import { BookOpen, CheckCircle2, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Dialog, Empty, ErrorAlert, PageHeader, Spinner } from "../components/ui";
-import { useDeleteArticle, useDevelopments, useKnowledge, useKnowledgeSearch, useSaveArticle } from "../lib/api";
+import { useDeleteArticle, useKnowledge, useKnowledgeSearch, useSaveArticle } from "../lib/api";
 import { dateTime } from "../lib/format";
 import { useSession } from "../lib/session";
 import type { KbArticle, KbCategory } from "../lib/types";
 
 export const KB_CATEGORY_LABEL: Record<KbCategory, string> = {
-  desarrollo: "Desarrollo y servicios",
-  compra: "Proceso de compra",
-  pagos: "Formas de pago",
-  construccion: "Construcción y reglamento",
-  oficina: "Oficina de ventas",
+  desarrollo: "Niveles educativos",
+  compra: "Proceso de admisión",
+  pagos: "Colegiaturas y becas",
+  construccion: "Vida escolar",
+  oficina: "Campus y contacto",
   general: "General",
 };
 const CATEGORIES = Object.keys(KB_CATEGORY_LABEL) as KbCategory[];
@@ -32,7 +32,7 @@ export function Conocimiento() {
     <div className="page" style={{ maxWidth: 1100 }}>
       <PageHeader
         title="Base de conocimiento"
-        subtitle="Lo que la IA puede responder sobre servicios, proceso de compra, formas de pago y más. Solo usa los textos aprobados, tal cual."
+        subtitle="Información del CUM que Lynna puede compartir con las familias. Solo usa textos aprobados."
         actions={
           canWrite && (
             <button className="btn btn--primary" onClick={() => setEditing("new")}>
@@ -47,7 +47,7 @@ export function Conocimiento() {
         <ErrorAlert error={articles.error} />
         {articles.data?.length === 0 && (
           <Empty icon={<BookOpen size={40} />} title="Aún no hay textos">
-            Agrega las preguntas frecuentes que aprobó la desarrolladora: servicios, requisitos, formas de pago…
+            Agrega las preguntas frecuentes de admisiones: niveles, proceso, campus y contacto.
           </Empty>
         )}
         {grouped.map(([category, items]) => (
@@ -77,7 +77,7 @@ export function Conocimiento() {
                   </div>
                   <p style={{ whiteSpace: "pre-wrap", margin: "6px 0" }}>{a.body}</p>
                   <div className="muted" style={{ fontSize: 12 }}>
-                    {[a.developmentName ?? "Todos los desarrollos", a.keywords ? `Palabras clave: ${a.keywords}` : null, a.approvedByName && a.approvedAt ? `Aprobó ${a.approvedByName}, ${dateTime(a.approvedAt)}` : null]
+                    {[a.keywords ? `Palabras clave: ${a.keywords}` : null, a.approvedByName && a.approvedAt ? `Aprobó ${a.approvedByName}, ${dateTime(a.approvedAt)}` : null]
                       .filter(Boolean)
                       .join(" · ")}
                   </div>
@@ -102,12 +102,12 @@ function SearchTester() {
         <Search size={16} /> Probar como la IA
       </div>
       <div className="card__body stack" style={{ gap: 10 }}>
-        <input className="input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Escribe una pregunta como la haría un prospecto: ¿el terreno tiene luz?" aria-label="Pregunta de prueba" />
+        <input className="input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ej. ¿Cómo puedo conocer el campus?" aria-label="Pregunta de prueba" />
         {q.trim().length >= 3 && search.data && (
           <div className="stack" style={{ gap: 6 }} aria-label="Resultados de la prueba" role="list">
             {search.data.hits.length === 0 ? (
               <p className="muted" style={{ margin: 0 }}>
-                La IA no encontraría nada aprobado: diría que un asesor lo confirma.
+                La IA no encontraría nada aprobado: pediría al equipo de admisiones que lo confirme.
               </p>
             ) : (
               search.data.hits.map((h, i) => (
@@ -126,7 +126,6 @@ function SearchTester() {
 function ArticleDialog({ article, onClose }: { article: KbArticle | null; onClose: () => void }) {
   const save = useSaveArticle();
   const remove = useDeleteArticle();
-  const developments = useDevelopments();
   const [form, setForm] = useState({
     title: article?.title ?? "",
     body: article?.body ?? "",
@@ -174,7 +173,7 @@ function ArticleDialog({ article, onClose }: { article: KbArticle | null; onClos
       <div className="stack" style={{ gap: 12, minWidth: "min(560px, 80vw)" }}>
         <div className="field">
           <label htmlFor="kb-title">Pregunta o tema</label>
-          <input id="kb-title" className="input" value={form.title} onChange={(e) => set({ title: e.target.value })} placeholder="¿Qué servicios tiene el terreno?" />
+          <input id="kb-title" className="input" value={form.title} onChange={(e) => set({ title: e.target.value })} placeholder="¿Qué niveles ofrece el CUM?" />
         </div>
         <div className="row" style={{ gap: 12 }}>
           <div className="field" style={{ flex: 1 }}>
@@ -187,26 +186,15 @@ function ArticleDialog({ article, onClose }: { article: KbArticle | null; onClos
               ))}
             </select>
           </div>
-          <div className="field" style={{ flex: 1 }}>
-            <label htmlFor="kb-dev">Aplica a</label>
-            <select id="kb-dev" className="select" value={form.developmentId} onChange={(e) => set({ developmentId: e.target.value })}>
-              <option value="">Todos los desarrollos</option>
-              {developments.data?.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
         <div className="field">
           <label htmlFor="kb-body">Respuesta aprobada</label>
           <textarea id="kb-body" className="textarea" style={{ minHeight: 140 }} value={form.body} onChange={(e) => set({ body: e.target.value })} />
-          <span className="field__hint">La IA la puede resumir, pero no agrega datos. Sin promesas de fechas de escrituración ni temas legales: eso lo atiende un asesor.</span>
+          <span className="field__hint">La IA puede resumir este texto. Aprueba fechas y costos solo si son vigentes; el equipo confirma la admisión.</span>
         </div>
         <div className="field">
           <label htmlFor="kb-keywords">Palabras clave</label>
-          <input id="kb-keywords" className="input" value={form.keywords} onChange={(e) => set({ keywords: e.target.value })} placeholder="luz, electricidad, CFE" />
+          <input id="kb-keywords" className="input" value={form.keywords} onChange={(e) => set({ keywords: e.target.value })} placeholder="visita, recorrido, campus" />
           <span className="field__hint">Cómo lo preguntan los prospectos. Mejoran la búsqueda.</span>
         </div>
         <label className="row" style={{ gap: 8 }}>

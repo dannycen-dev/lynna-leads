@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 // Alta o actualización de un usuario del panel (no hay registro abierto).
 //
-//   pnpm --filter @lynna/api user:create --email ana@desarrolladora.mx --name "Ana López" --role manager --tenant demo
-//   pnpm --filter @lynna/api user:create --email danny@igniastudio.mx --name "Danny" --role admin --target dev
+//   pnpm --filter @lynna/api user:create --email demo@31rooms.com --name "Demo CUM" --role manager --tenant cum
 //
-// --target local (por omisión) | dev | stg | prod      --password <opcional; si falta se genera>
+// --target local (por omisión) | cum      --password <opcional; si falta se genera>
 // --persist-to <dir>  (solo local; lo usan las pruebas E2E)
 //
-// Si el correo ya existe, actualiza nombre, rol, desarrolladora y contraseña, y lo reactiva.
+// Si el correo ya existe, actualiza nombre, rol, institución y contraseña, y lo reactiva.
 // El formato del hash debe coincidir con src/auth/password.ts.
 
 import { spawnSync } from "node:child_process";
@@ -20,7 +19,7 @@ import { parseArgs } from "node:util";
 const PBKDF2_ITERATIONS = 100_000;
 const MIN_PASSWORD_LENGTH = 10;
 const ROLES = ["admin", "owner", "manager", "seller"];
-const TARGETS = ["local", "dev", "stg", "prod"];
+const TARGETS = ["local", "cum"];
 
 const { values: a } = parseArgs({
   options: {
@@ -43,7 +42,7 @@ const email = a.email?.trim().toLowerCase();
 if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fail("--email es obligatorio y debe ser válido.");
 if (!a.name?.trim()) fail("--name es obligatorio.");
 if (!ROLES.includes(a.role)) fail(`--role debe ser uno de: ${ROLES.join(", ")}.`);
-if (a.role !== "admin" && !a.tenant) fail("--tenant (slug de la desarrolladora) es obligatorio salvo para role=admin.");
+if (a.role !== "admin" && !a.tenant) fail("--tenant (slug de la institución) es obligatorio salvo para role=admin.");
 if (!TARGETS.includes(a.target)) fail(`--target debe ser uno de: ${TARGETS.join(", ")}.`);
 if (a.password !== undefined && a.password.length < MIN_PASSWORD_LENGTH) fail(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`);
 
@@ -57,11 +56,11 @@ const passwordHash = `pbkdf2-sha256$${PBKDF2_ITERATIONS}$${salt.toString("base64
 const apiDir = path.resolve(import.meta.dirname, "..");
 const remote = a.target !== "local";
 const env = { ...process.env };
-// Igual que los scripts de deploy: sesión de wrangler de Ignia (en CI manda CLOUDFLARE_API_TOKEN).
-if (remote && !env.CLOUDFLARE_API_TOKEN && !env.XDG_CONFIG_HOME) env.XDG_CONFIG_HOME = path.join(homedir(), ".wrangler-cuentas/ignia");
+// La variante CUM usa la cuenta 31 Rooms; nunca el perfil de Lynna inmobiliaria.
+if (remote && !env.CLOUDFLARE_API_TOKEN && !env.XDG_CONFIG_HOME) env.XDG_CONFIG_HOME = path.join(homedir(), ".wrangler-cuentas/31rooms");
 
 function wrangler(args) {
-  const base = ["exec", "wrangler", "d1", "execute", "DB", ...(remote ? ["--env", a.target, "--remote"] : ["--local"])];
+  const base = ["exec", "wrangler", "d1", "execute", "DB", ...(remote ? ["--remote"] : ["--local"])];
   if (!remote && a["persist-to"]) base.push("--persist-to", a["persist-to"]);
   const res = spawnSync("pnpm", [...base, ...args], { cwd: apiDir, env, encoding: "utf8" });
   if (res.status !== 0) fail(`wrangler falló:\n${res.stderr || res.stdout}`);
@@ -74,7 +73,7 @@ let tenantId = null;
 if (a.role !== "admin") {
   const out = wrangler(["--json", "--command", `SELECT id FROM tenants WHERE slug = ${q(a.tenant)}`]);
   const rows = JSON.parse(out.slice(out.indexOf("[")))[0]?.results ?? [];
-  if (rows.length === 0) fail(`No existe la desarrolladora "${a.tenant}" en ${a.target}.`);
+  if (rows.length === 0) fail(`No existe la institución "${a.tenant}" en ${a.target}.`);
   tenantId = rows[0].id;
 }
 

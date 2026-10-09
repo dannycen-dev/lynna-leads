@@ -16,8 +16,6 @@
     "e2e:smoke": "pnpm --filter @lynna/e2e e2e:smoke",
     "dev:web": "pnpm --filter @lynna/web dev",
     "build": "pnpm --filter @lynna/web build",
-    "user:create": "pnpm --filter @lynna/api user:create",
-    "demo:users": "pnpm --filter @lynna/api demo:users",
-    "demo:crm": "pnpm --filter @lynna/api demo:crm"
+    "user:create": "pnpm --filter @lynna/api user:create"
   }
 }

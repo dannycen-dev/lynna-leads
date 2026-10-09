@@ -4,21 +4,11 @@ import { createRoot } from "react-dom/client";
 import { createBrowserRouter, Navigate, RouterProvider, useRouteError } from "react-router";
 import { Layout } from "./components/Layout";
 import { Empty, Spinner } from "./components/ui";
-import { Agenda } from "./pages/Agenda";
-import { Metricas } from "./pages/Metricas";
 import { Cuenta, ForcedPasswordChange } from "./pages/Cuenta";
 import { Usuarios } from "./pages/Usuarios";
-import { Consumo } from "./pages/Consumo";
-import { CotizadorDevelopments, CotizadorLot, CotizadorLots } from "./pages/Cotizador";
-import { Configuracion } from "./pages/Configuracion";
 import { Conocimiento } from "./pages/Conocimiento";
-import { Home } from "./pages/Home";
-import { InventarioDevelopment, InventarioList } from "./pages/Inventario";
 import { Login } from "./pages/Login";
-import { Planes } from "./pages/Planes";
-import { ProspectoFicha } from "./pages/ProspectoFicha";
-import { Prospectos } from "./pages/Prospectos";
-import { Simulador } from "./pages/Simulador";
+import { AdmissionsDashboard, AdmissionsDetail, AdmissionsLeads, AdmissionsSimulator } from "./pages/Admisiones";
 import { SessionProvider, useSession } from "./lib/session";
 import "./styles/app.css";
 
@@ -65,22 +55,12 @@ const router = createBrowserRouter([
     element: <Protected />,
     errorElement: <RouteError />,
     children: [
-      { index: true, element: <Home /> },
-      { path: "cotizador", element: <CotizadorDevelopments /> },
-      { path: "cotizador/:dev", element: <CotizadorLots /> },
-      { path: "cotizador/:dev/lotes/:lotId", element: <CotizadorLot /> },
-      { path: "inventario", element: <InventarioList /> },
-      { path: "inventario/:dev", element: <InventarioDevelopment /> },
-      { path: "planes", element: <Planes /> },
-      { path: "prospectos", element: <Prospectos /> },
-      { path: "prospectos/:id", element: <ProspectoFicha /> },
-      { path: "agente", element: <Simulador /> },
-      { path: "citas", element: <Agenda /> },
-      { path: "metricas", element: <Metricas /> },
+      { index: true, element: <AdmissionsDashboard /> },
+      { path: "admisiones", element: <AdmissionsLeads /> },
+      { path: "admisiones/:id", element: <AdmissionsDetail /> },
+      { path: "agente", element: <AdmissionsSimulator /> },
       { path: "conocimiento", element: <Conocimiento /> },
-      { path: "ajustes", element: <Configuracion /> },
       { path: "usuarios", element: <Usuarios /> },
-      { path: "consumo", element: <Consumo /> },
       { path: "cuenta", element: <Cuenta /> },
       { path: "*", element: <div className="page"><Empty title="Página no encontrada" /></div> },
     ],

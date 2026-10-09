@@ -150,6 +150,12 @@ export type Prospect = {
   phone: string;
   name: string | null;
   profileName: string | null;
+  email: string | null;
+  studentName: string | null;
+  educationLevel: "secundaria" | "preparatoria" | null;
+  targetGrade: string | null;
+  leadChannel: "whatsapp" | "correo" | "web" | "telefono" | "presencial" | null;
+  nextFollowupAt: number | null;
   stage: string;
   score: number;
   city: string | null;
@@ -160,7 +166,7 @@ export type Prospect = {
   handoffAt: number | null;
   handoffReason: string | null;
   optedOutAt: number | null;
-  source: "whatsapp" | "simulator";
+  source: "whatsapp" | "simulator" | "manual";
   createdAt: number;
   conversationId: string | null;
   aiPaused: boolean | null;

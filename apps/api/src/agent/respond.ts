@@ -9,6 +9,7 @@ import { withFallback, workersAiClient, type LlmClient } from "./llm";
 import { extractProspectData, looksLikeProspectData } from "./extract";
 import { detectEscalation } from "./intent";
 import { PROMPT_VERSION } from "./prompt";
+import { ADMISSIONS_PROMPT_VERSION, runAdmissionsAgent } from "./admissions";
 import { runAgent, type AgentResult } from "./runner";
 import { newFacts, runTool } from "./tools";
 
@@ -20,8 +21,8 @@ export function canSendWhatsApp(env: Env): boolean {
 export function defaultLlm(env: Env, model?: string, thinkingOverride?: boolean): LlmClient {
   const chosen = model || env.AI_MODEL;
   const thinking = thinkingOverride ?? (env.AI_THINKING === "off" ? false : env.AI_THINKING === "on" ? true : undefined);
-  // El modelo falso solo existe en local (pruebas E2E sin red ni neuronas).
-  if (chosen === "fake" && env.ENVIRONMENT === "local") return fakeLlm;
+  // El modelo falso se usa solo cuando se solicita explícitamente en pruebas.
+  if (chosen === "fake") return fakeLlm;
   const gateway = env.AI_GATEWAY_ID || undefined;
   // Con modelo explícito (evaluación) no hay respaldo: se mide ese modelo y nada más.
   const fallback = !model && env.AI_MODEL_FALLBACK ? workersAiClient(env.AI, env.AI_MODEL_FALLBACK, gateway) : null;
@@ -89,7 +90,7 @@ export async function respondToConversation(
   }
 
   const llm = options.llm ?? defaultLlm(env);
-  const agentResult = await runAgent({
+  const agentInput = {
     db,
     llm,
     tenant: { id: tenant.id, name: tenant.name },
@@ -98,7 +99,10 @@ export async function respondToConversation(
     history: history.map((m) => ({ direction: m.direction, body: m.body, type: m.type })),
     incoming: incoming.map((m) => ({ type: m.type, body: m.body })),
     lotCards: env.LOT_CARDS === "carousel" ? "carousel" : "list",
-  });
+  } as const;
+  const agentResult = tenant.vertical === "education"
+    ? await runAdmissionsAgent({ db, llm, tenant, prospect, history: agentInput.history, incoming: agentInput.incoming })
+    : await runAgent({ ...agentInput, lotCards: env.LOT_CARDS === "carousel" ? "carousel" : "list" });
   const result = { ...agentResult, reply: toWhatsAppFormat(agentResult.reply) };
 
   // Envío: real solo con credenciales, dentro de la ventana de 24 h y si no es el simulador.
@@ -145,7 +149,7 @@ export async function respondToConversation(
       tenantId: tenant.id,
       conversationId,
       model: result.deterministic ? "ninguno" : result.modelsUsed.join(" + ") || llm.model,
-      promptVersion: PROMPT_VERSION,
+      promptVersion: tenant.vertical === "education" ? ADMISSIONS_PROMPT_VERSION : PROMPT_VERSION,
       input: incoming.map((m) => m.body ?? `[${m.type}]`).join("\n"),
       toolCalls: result.toolTrace,
       draft: result.draft,
@@ -182,7 +186,7 @@ export async function respondToConversation(
   const savedByModel = result.toolTrace.some((t) => t.name === "actualizar_prospecto");
   // Una contraoferta ("si me lo dejas en 500 mil") no es su presupuesto: no se extrae.
   const counteroffer = detectEscalation(incomingText) === "descuento";
-  if (!result.deterministic && !savedByModel && !counteroffer && looksLikeProspectData(incomingText)) {
+  if (tenant.vertical !== "education" && !result.deterministic && !savedByModel && !counteroffer && looksLikeProspectData(incomingText)) {
     const work = (async () => {
       const { data, neurons } = await extractProspectData(llm, incomingText);
       if (Object.keys(data).length === 0) return;

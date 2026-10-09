@@ -35,6 +35,7 @@ export const tenants = sqliteTable("tenants", {
   id: id(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
+  vertical: text("vertical", { enum: ["real_estate", "education"] }).notNull().default("real_estate"),
   // Asignación de prospectos: en turno automático o manual por un gerente.
   assignmentMode: text("assignment_mode", { enum: ["round_robin", "manual"] }).notNull().default("round_robin"),
   // Si un prospecto pidió asesor y nadie tomó la conversación en estos minutos, pasa al siguiente vendedor (0 = nunca).
@@ -204,6 +205,11 @@ export const prospects = sqliteTable(
     name: text("name"),
     profileName: text("profile_name"),
     email: text("email"),
+    studentName: text("student_name"),
+    educationLevel: text("education_level", { enum: ["secundaria", "preparatoria"] }),
+    targetGrade: text("target_grade"),
+    leadChannel: text("lead_channel", { enum: ["whatsapp", "correo", "web", "telefono", "presencial"] }),
+    nextFollowupAt: integer("next_followup_at"),
     stage: text("stage", { enum: PROSPECT_STAGES }).notNull().default("new"),
     score: integer("score").notNull().default(0),
     budgetCents: integer("budget_cents"),
@@ -219,7 +225,7 @@ export const prospects = sqliteTable(
     // Traspaso a un asesor humano (intención de compra, descuentos, temas legales, pagos, quejas, documentos).
     handoffAt: integer("handoff_at"),
     handoffReason: text("handoff_reason"),
-    source: text("source", { enum: ["whatsapp", "simulator"] }).notNull().default("whatsapp"),
+    source: text("source", { enum: ["whatsapp", "simulator", "manual"] }).notNull().default("whatsapp"),
     // Privacidad (LFPDPPP). Aviso mostrado en el primer mensaje; consentimiento EXPRESO para datos
     // financieros/patrimoniales (presupuesto, enganche): sin él no se guardan, quedan en pending_financial.
     privacyNoticeAt: integer("privacy_notice_at"),

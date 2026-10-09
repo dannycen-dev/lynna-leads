@@ -39,6 +39,88 @@ import { isWithinServiceWindow, sendText } from "../whatsapp/client";
 type AppEnv = { Bindings: Env; Variables: AuthVariables & { tenant: typeof tenants.$inferSelect } };
 export const crm = new Hono<AppEnv>();
 
+const admissionBody = z.object({
+  name: z.string().trim().min(1).max(120),
+  phone: z.string().trim().regex(/^\+?\d{10,15}$/).optional().or(z.literal("")),
+  email: z.email().max(200).optional().or(z.literal("")),
+  studentName: z.string().trim().max(120).optional().or(z.literal("")),
+  educationLevel: z.enum(["secundaria", "preparatoria"]).optional(),
+  targetGrade: z.string().trim().max(30).optional().or(z.literal("")),
+  leadChannel: z.enum(["whatsapp", "correo", "web", "telefono", "presencial"]),
+  nextFollowupAt: z.number().int().positive().nullable().optional(),
+});
+
+/** Captura manual de un contacto que llegó por correo, web, teléfono o en el campus. */
+crm.post("/prospects", async (c) => {
+  if (c.var.tenant.vertical !== "education") return c.json({ error: "not_found" }, 404);
+  const parsed = await readBody(c, admissionBody);
+  if (!parsed.success) return c.json({ error: "validation", issues: z.flattenError(parsed.error).fieldErrors }, 400);
+  const data = parsed.data;
+  if (!data.phone && !data.email) return c.json({ error: "validation", message: "Indica teléfono o correo." }, 400);
+  const db = getDb(c.env.DB);
+  const now = Date.now();
+  const phone = data.phone ? data.phone.replace(/\D/g, "") : `manual-${crypto.randomUUID()}`;
+  const existing = data.phone ? await db.select({ id: prospects.id }).from(prospects).where(and(eq(prospects.tenantId, c.var.tenant.id), eq(prospects.phone, phone))).get() : null;
+  if (existing) return c.json({ error: "duplicate", message: "Ya existe un contacto con ese teléfono.", id: existing.id }, 409);
+  const [created] = await db.insert(prospects).values({
+    tenantId: c.var.tenant.id,
+    phone,
+    name: data.name,
+    email: data.email || null,
+    studentName: data.studentName || null,
+    educationLevel: data.educationLevel ?? null,
+    targetGrade: data.targetGrade || null,
+    leadChannel: data.leadChannel,
+    source: "manual",
+    assignedUserId: userIdOf(c),
+    assignedAt: userIdOf(c) ? now : null,
+    nextFollowupAt: data.nextFollowupAt === undefined ? now + 48 * 60 * 60 * 1000 : data.nextFollowupAt,
+    score: data.educationLevel ? 40 : 10,
+    createdAt: now,
+    updatedAt: now,
+  }).returning();
+  await auditInsert(db, { tenantId: c.var.tenant.id, actor: actorOf(c.var.principal), entity: "prospect", entityId: created!.id, action: "created", data: { channel: data.leadChannel } });
+  return c.json(created, 201);
+});
+
+crm.patch("/prospects/:id/admissions", async (c) => {
+  if (c.var.tenant.vertical !== "education") return c.json({ error: "not_found" }, 404);
+  const parsed = await readBody(c, admissionBody.partial());
+  if (!parsed.success) return c.json({ error: "validation", issues: z.flattenError(parsed.error).fieldErrors }, 400);
+  const db = getDb(c.env.DB);
+  const prospect = await loadProspect(db, c.var.tenant.id, c.req.param("id"), c.var.principal);
+  if (!prospect) return c.json({ error: "not_found" }, 404);
+  const data = parsed.data;
+  const [updated] = await db.update(prospects).set({
+    ...(data.name !== undefined ? { name: data.name } : {}),
+    ...(data.email !== undefined ? { email: data.email || null } : {}),
+    ...(data.studentName !== undefined ? { studentName: data.studentName || null } : {}),
+    ...(data.educationLevel !== undefined ? { educationLevel: data.educationLevel } : {}),
+    ...(data.targetGrade !== undefined ? { targetGrade: data.targetGrade || null } : {}),
+    ...(data.leadChannel !== undefined ? { leadChannel: data.leadChannel } : {}),
+    ...(data.nextFollowupAt !== undefined ? { nextFollowupAt: data.nextFollowupAt } : {}),
+    updatedAt: Date.now(),
+  }).where(eq(prospects.id, prospect.id)).returning();
+  await auditInsert(db, { tenantId: c.var.tenant.id, actor: actorOf(c.var.principal), entity: "prospect", entityId: prospect.id, action: "updated", data: { fields: Object.keys(data) } });
+  return c.json(updated);
+});
+
+crm.get("/admissions/report", async (c) => {
+  if (c.var.tenant.vertical !== "education") return c.json({ error: "not_found" }, 404);
+  const db = getDb(c.env.DB);
+  const rows = await db.select({ stage: prospects.stage, channel: prospects.leadChannel, level: prospects.educationLevel, followup: prospects.nextFollowupAt, createdAt: prospects.createdAt })
+    .from(prospects).where(and(eq(prospects.tenantId, c.var.tenant.id), prospectScope(c.var.principal)));
+  const now = Date.now();
+  return c.json({
+    total: rows.length,
+    newLast48h: rows.filter((row) => row.createdAt >= now - 48 * 60 * 60 * 1000).length,
+    followupsDue: rows.filter((row) => row.followup !== null && row.followup <= now && row.stage !== "won" && row.stage !== "lost").length,
+    byStage: Object.fromEntries(PROSPECT_STAGES.map((stage) => [stage, rows.filter((row) => row.stage === stage).length])),
+    byChannel: Object.fromEntries(["whatsapp", "correo", "web", "telefono", "presencial"].map((channel) => [channel, rows.filter((row) => row.channel === channel).length])),
+    byLevel: Object.fromEntries(["secundaria", "preparatoria"].map((level) => [level, rows.filter((row) => row.level === level).length])),
+  });
+});
+
 /** userId de la persona con sesión (null si es el token de automatización). */
 const userIdOf = (c: { var: AuthVariables }) => (c.var.principal.kind === "user" ? c.var.principal.user.id : null);
 

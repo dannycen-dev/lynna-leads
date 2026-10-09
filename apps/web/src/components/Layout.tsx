@@ -1,19 +1,12 @@
 import {
-  BarChart3,
-  Gauge,
   BookOpen,
   Bot,
-  Building2,
-  CalendarCheck,
-  Calculator,
   Home,
   LogOut,
   Menu,
-  MessageCircle,
   Settings,
   UserCog,
   Users,
-  WalletCards,
   X,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -23,34 +16,21 @@ import { NotificationBell } from "./NotificationBell";
 
 type NavItem = { to: string; label: string; icon: ReactNode; end?: boolean; soon?: boolean; hideForSeller?: boolean };
 
-// Mismo orden que el sidebar de la app Inmobiliaria en Lynna (Odoo).
 const NAV: { section?: string; items: NavItem[] }[] = [
   { items: [{ to: "/", label: "Inicio", icon: <Home size={18} />, end: true }] },
   {
-    section: "Ventas",
+    section: "Admisiones",
     items: [
-      { to: "/cotizador", label: "Cotizador", icon: <Calculator size={18} /> },
-      { to: "/prospectos", label: "Prospectos", icon: <Users size={18} /> },
-      { to: "/agente", label: "Agente de IA", icon: <Bot size={18} /> },
-      { to: "/conocimiento", label: "Base de conocimiento", icon: <BookOpen size={18} /> },
-      { to: "/conversaciones", label: "WhatsApp", icon: <MessageCircle size={18} />, soon: true },
-      { to: "/citas", label: "Citas", icon: <CalendarCheck size={18} /> },
-      { to: "/metricas", label: "Métricas", icon: <BarChart3 size={18} /> },
+      { to: "/admisiones", label: "Familias interesadas", icon: <Users size={18} /> },
+      { to: "/agente", label: "Probar a Lynna", icon: <Bot size={18} /> },
+      { to: "/conocimiento", label: "Información aprobada", icon: <BookOpen size={18} /> },
     ],
   },
   {
-    section: "Inventario",
+    section: "Equipo",
     items: [
-      { to: "/inventario", label: "Desarrollos y lotes", icon: <Building2 size={18} /> },
-      { to: "/planes", label: "Planes de pago", icon: <WalletCards size={18} /> },
-    ],
-  },
-  {
-    section: "Ajustes",
-    items: [
-      { to: "/ajustes", label: "Configuración", icon: <Settings size={18} /> },
       { to: "/usuarios", label: "Usuarios", icon: <UserCog size={18} />, hideForSeller: true },
-      { to: "/consumo", label: "Consumo", icon: <Gauge size={18} />, hideForSeller: true },
+      { to: "/cuenta", label: "Mi cuenta", icon: <Settings size={18} /> },
     ],
   },
 ];
@@ -60,9 +40,7 @@ const ENV_LABEL: Record<string, string> = { localhost: "local", "127.0.0.1": "lo
 function environmentLabel(): string | null {
   const host = window.location.hostname;
   if (ENV_LABEL[host]) return ENV_LABEL[host];
-  // devlynna.igniastudio.mx → "dev", stglynna… → "stg"; producción no muestra etiqueta.
-  const match = /^(dev|stg)lynna\./.exec(host);
-  return match ? match[1]! : null;
+  return host === "cum.31rooms.com" ? "demo CUM" : null;
 }
 
 function initials(name: string): string {
@@ -97,13 +75,13 @@ export function Layout() {
         </button>
         <NavLink to="/" className="navbar__brand">
           <img className="navbar__logo" src="/lynna-icon-192.png" alt="" />
-          Lynna
+          Lynna <span className="navbar__brand-suffix">Leads</span>
         </NavLink>
         {env && <span className="navbar__env navbar__hide-sm">{env}</span>}
         <div className="navbar__spacer" />
         {tenants.length > 1 ? (
           <label className="navbar__hide-sm">
-            <span className="sr-only">Desarrolladora</span>
+            <span className="sr-only">Institución</span>
             <select className="navbar__select" value={tenant} onChange={(e) => setTenant(e.target.value)}>
               {tenants.map((t) => (
                 <option key={t.id} value={t.slug}>

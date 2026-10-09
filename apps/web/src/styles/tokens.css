@@ -21,13 +21,13 @@
   --lynna-divider: #e3e8e7;
 
   /* Primario */
-  --lynna-primary: #00685f;
-  --lynna-primary-container: #008378;
+  --lynna-primary: #143b5c;
+  --lynna-primary-container: #205a7b;
   --lynna-on-primary: #ffffff;
-  --lynna-primary-tint: rgba(0, 104, 95, 0.08);
-  --lynna-primary-tint-strong: rgba(0, 104, 95, 0.14);
-  --lynna-primary-glow: rgba(0, 104, 95, 0.18);
-  --lynna-primary-dark: #004d46;
+  --lynna-primary-tint: rgba(20, 59, 92, 0.08);
+  --lynna-primary-tint-strong: rgba(20, 59, 92, 0.14);
+  --lynna-primary-glow: rgba(20, 59, 92, 0.18);
+  --lynna-primary-dark: #102f4c;
 
   /* Estados */
   --lynna-error: #ba1a1a;

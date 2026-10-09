@@ -4,10 +4,10 @@ import { ApiError, apiFetch } from "./api-client";
 import type { Me, Tenant, UserRole } from "./types";
 
 // La sesión vive en una cookie HttpOnly que pone la API: el JavaScript de la página nunca ve
-// el token. Aquí solo se guarda qué desarrolladora está viendo el usuario (si tiene varias).
+// el token. Aquí solo se guarda qué institución está viendo el usuario (si tiene varias).
 
 const TENANT_KEY = "lynna.tenant";
-const ROLE_LABEL: Record<UserRole, string> = { admin: "Ignia", owner: "Dueño", manager: "Gerente", seller: "Vendedor" };
+const ROLE_LABEL: Record<UserRole, string> = { admin: "Administrador", owner: "Dirección", manager: "Coordinación", seller: "Admisiones" };
 
 function readTenant(): string | null {
   try {
@@ -31,7 +31,7 @@ type Session = {
   tenant: string;
   tenants: Tenant[];
   roleLabel: string;
-  /** owner, manager y admin pueden modificar inventario y planes; seller solo consulta y cotiza. */
+  /** Permisos heredados del panel, usados para edición y consulta. */
   canWrite: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;

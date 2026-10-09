@@ -71,7 +71,7 @@ admin.use("/tenants/:tenant/*", async (c, next) => {
   const tenant = await getDb(c.env.DB).select().from(tenants).where(eq(tenants.slug, c.req.param("tenant"))).get();
   // 404 también cuando no tiene acceso: no se revela qué desarrolladoras existen.
   if (!tenant || !canAccessTenant(c.var.principal, tenant.id)) {
-    return c.json({ error: "not_found", message: "Desarrolladora no encontrada." }, 404);
+    return c.json({ error: "not_found", message: "Institución no encontrada." }, 404);
   }
   // Vendedores: lectura, simulación de planes, el simulador del agente y el CRM (prospectos,
   // conversaciones, avisos). No modifican inventario, planes ni importaciones.
