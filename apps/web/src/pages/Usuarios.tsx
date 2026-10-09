@@ -1,4 +1,4 @@
-import { Copy, KeyRound, UserPlus, Users } from "lucide-react";
+import { Copy, KeyRound, Pencil, UserPlus, Users } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
 import { Dialog, ErrorAlert, PageHeader, Spinner } from "../components/ui";
@@ -37,6 +37,7 @@ export function Usuarios() {
   const update = useUpdateUser();
   const reset = useResetPassword();
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<ManagedUser | null>(null);
   const [shown, setShown] = useState<{ email: string; password: string } | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const manageable = users.data?.manageableRoles ?? [];
@@ -59,7 +60,7 @@ export function Usuarios() {
       <ErrorAlert error={users.error ?? update.error ?? reset.error} />
       {warning && (
         <div className="alert alert--warning" role="status" style={{ marginBottom: 12 }}>
-          {warning} <Link to="/prospectos">Ir a prospectos</Link>
+          {warning} <Link to="/admisiones">Ir a familias interesadas</Link>
         </div>
       )}
       {users.data && (
@@ -119,6 +120,9 @@ export function Usuarios() {
                   <td className="right" style={{ whiteSpace: "nowrap" }}>
                     {canManage(u) && (
                       <>
+                        <button className="btn btn--sm btn--ghost" disabled={update.isPending} onClick={() => setEditing(u)}>
+                          <Pencil size={14} /> Editar
+                        </button>{" "}
                         <button
                           className="btn btn--sm btn--ghost"
                           disabled={reset.isPending || !u.active}
@@ -151,6 +155,7 @@ export function Usuarios() {
         </div>
       )}
       {creating && <CreateUserDialog roles={manageable} onClose={() => setCreating(false)} onCreated={(email, password) => setShown({ email, password })} />}
+      {editing && <EditUserDialog user={editing} onClose={() => setEditing(null)} />}
       {shown && (
         <Dialog open onClose={() => setShown(null)} title="Contraseña temporal" footer={<button className="btn btn--primary" onClick={() => setShown(null)}>Listo, ya la guardé</button>}>
           <TemporaryPassword email={shown.email} password={shown.password} />
@@ -213,10 +218,23 @@ function CreateUserDialog({ roles, onClose, onCreated }: { roles: UserRole[]; on
               </option>
             ))}
           </select>
-          <span className="field__hint">Vendedor: sus prospectos y su agenda. Gerente: todo el equipo e inventario. Dueño: además administra gerentes.</span>
+          <span className="field__hint">Admisiones: consulta y atiende contactos. Coordinación: administra el equipo de admisiones. Dirección: también administra coordinadores.</span>
         </div>
         <ErrorAlert error={create.error} />
       </div>
     </Dialog>
   );
+}
+
+function EditUserDialog({ user, onClose }: { user: ManagedUser; onClose: () => void }) {
+  const update = useUpdateUser();
+  const [name, setName] = useState(user.name);
+  return <Dialog open onClose={onClose} title="Editar usuario" footer={<>
+    <button className="btn" onClick={onClose}>Cancelar</button>
+    <button className="btn btn--primary" disabled={update.isPending || name.trim().length < 2 || name.trim() === user.name}
+      onClick={() => update.mutate({ id: user.id, name: name.trim() }, { onSuccess: onClose })}>Guardar cambios</button>
+  </>}>
+    <div className="field"><label htmlFor="edit-name">Nombre</label><input id="edit-name" className="input" value={name} onChange={(event) => setName(event.target.value)} /></div>
+    <p className="muted">{user.email}</p><ErrorAlert error={update.error} />
+  </Dialog>;
 }

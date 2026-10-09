@@ -165,7 +165,7 @@ const shortFmt = new Intl.DateTimeFormat("es-MX", { weekday: "short", day: "nume
 /** Instante → "jue 8 oct, 10:00" (hora del centro de México). */
 export const shortDateTime = (ms: number) => shortFmt.format(new Date(ms)).replace(/\./g, "");
 
-export const ROLE_LABEL: Record<string, string> = { admin: "Ignia", owner: "Dueño", manager: "Gerente", seller: "Vendedor" };
+export const ROLE_LABEL: Record<string, string> = { admin: "Administrador", owner: "Dirección", manager: "Coordinación", seller: "Admisiones" };
 
 export function initials(name: string): string {
   return name
