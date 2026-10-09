@@ -108,7 +108,7 @@ crm.patch("/prospects/:id/admissions", async (c) => {
 crm.get("/admissions/report", async (c) => {
   if (c.var.tenant.vertical !== "education") return c.json({ error: "not_found" }, 404);
   const db = getDb(c.env.DB);
-  const rows = await db.select({ stage: prospects.stage, channel: prospects.leadChannel, level: prospects.educationLevel, followup: prospects.nextFollowupAt, createdAt: prospects.createdAt })
+  const rows = await db.select({ id: prospects.id, name: prospects.name, stage: prospects.stage, channel: prospects.leadChannel, level: prospects.educationLevel, followup: prospects.nextFollowupAt, createdAt: prospects.createdAt })
     .from(prospects).where(and(eq(prospects.tenantId, c.var.tenant.id), prospectScope(c.var.principal)));
   const now = Date.now();
   return c.json({
@@ -118,6 +118,7 @@ crm.get("/admissions/report", async (c) => {
     byStage: Object.fromEntries(PROSPECT_STAGES.map((stage) => [stage, rows.filter((row) => row.stage === stage).length])),
     byChannel: Object.fromEntries(["whatsapp", "correo", "web", "telefono", "presencial"].map((channel) => [channel, rows.filter((row) => row.channel === channel).length])),
     byLevel: Object.fromEntries(["secundaria", "preparatoria"].map((level) => [level, rows.filter((row) => row.level === level).length])),
+    leads: rows,
   });
 });
 

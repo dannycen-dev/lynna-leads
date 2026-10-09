@@ -15,8 +15,8 @@ Resumen de la llamada de 23 minutos con el equipo de admisiones. La transcripci�
 ## Demo construida
 
 - Simulador de WhatsApp con asistente de admisiones y respuestas basadas en artículos aprobados.
-- CRM visible en el menú, con búsqueda, filtros, ficha, conversación, notas, etapa y próximo contacto.
-- Tablero y reportes con embudo, origen, nivel, familias nuevas en 48 horas y seguimientos pendientes.
+- CRM visible en el menú, con Kanban y lista, búsqueda, filtros, ficha, conversación, notas, etapa y próximo contacto.
+- Tablero BI con periodo, etapa, canal y nivel; evolución semanal, embudo, conversión, seguimientos, tablas de detalle, CSV e impresión. Incluye familias ficticias verosímiles para presentar la demo; las cifras se actualizan con los nuevos contactos.
 - Guía visual y PDF conceptuales que el asistente puede adjuntar cuando se solicitan, más opciones rápidas para elegir nivel o pedir un asesor.
 
 ## Antes de usarlo con familias reales

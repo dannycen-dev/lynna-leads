@@ -4,8 +4,8 @@ Prueba de concepto de atención a familias interesadas en secundaria y preparato
 
 ## Qué muestra la demo
 
-- CRM de admisiones con filtros por etapa y nivel, canal de origen, grado de interés, notas y próximo contacto.
-- Tablero y reportes en vivo con embudo, contactos nuevos en 48 horas, fuentes de captación y seguimientos pendientes.
+- CRM de admisiones con Kanban y lista, filtros por etapa y nivel, canal de origen, grado de interés, notas y próximo contacto.
+- Tablero BI con evolución semanal, embudo, conversión, origen, nivel y seguimientos; filtros, tabla de detalle, CSV e informe imprimible. La demo incluye 30 familias de ejemplo verosímiles, con teléfonos ficticios y correos `example.com`.
 - Simulador de WhatsApp con respuestas del asistente basadas en contenido aprobado, opciones rápidas y envío de una guía visual o PDF cuando se solicitan.
 - Derivación al equipo humano de consultas sobre precios, exámenes, inscripción y visitas al campus.
 - Base de conocimiento editable por el equipo. Datos de contacto ficticios; no se cargaron expedientes de menores.

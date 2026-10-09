@@ -29,16 +29,17 @@ export function needsAdmissionsTeam(message: string) {
 /** Solo se ofrecen piezas conceptuales de la demo cuando la familia pide material. */
 export function admissionsMaterial(message: string): Attachment[] {
   const text = normalize(message);
-  if (/\b(pdf|folleto|brochure|documento|guia de admisiones)\b/.test(text)) return [{
+  const attachments: Attachment[] = [];
+  if (/\b(pdf|folleto|brochure|documento|guia de admisiones)\b/.test(text)) attachments.push({
     kind: "document", mediaId: "cum-guia-pdf-demo", mime: "application/pdf",
     caption: "Guía inicial de admisiones · material de demostración; el CUM confirmará los datos vigentes.",
     filename: "Guia-admisiones-CUM-demo.pdf",
-  }];
-  if (/\b(foto|fotos|imagen|imagenes|flyer|cartel|material visual)\b/.test(text)) return [{
+  });
+  if (/\b(foto|fotos|imagen|imagenes|flyer|cartel|material visual)\b/.test(text)) attachments.push({
     kind: "image", mediaId: "cum-guia-visual-demo", mime: "image/png",
     caption: "Guía visual de admisiones · ilustración conceptual y material de demostración.",
-  }];
-  return [];
+  });
+  return attachments;
 }
 
 /** Respuesta de admisiones: contexto aprobado, registro mínimo y traspaso a una persona. */
@@ -103,7 +104,7 @@ export async function runAdmissionsAgent(input: {
   if (deterministic) {
     if (/\b(visita|visitar|recorrido|conocer)\b/.test(normalize(message))) reply = "¡Qué gusto que quieran conocer el CUM! Compárteme si les interesa secundaria o preparatoria y el equipo de admisiones les ayudará a coordinar una visita al campus.";
     else if (/\b(fecha|examen|costo|colegiatura|precio)\b/.test(normalize(message))) reply = "El equipo de admisiones te confirmará la información vigente sobre fechas y costos. ¿Buscas secundaria o preparatoria? También podemos ayudarte a conocer el campus.";
-  } else {
+  } else if (!attachments.length) {
     try {
       const completion = await input.llm.complete({ tools: [], messages: [
         { role: "system", content: `Eres ${input.tenant.assistantName}, asistente de admisiones del Centro Universitario Montejo (CUM) en Mérida. Atiendes a madres, padres y tutores con calidez y brevedad por WhatsApp. El colegio ofrece secundaria y preparatoria. Su objetivo es que la familia conozca el campus y que el equipo dé seguimiento personal.\n\nNivel de interés ya detectado: ${level ?? input.prospect.educationLevel ?? "por confirmar"}. No vuelvas a preguntar por el nivel si ya está detectado; pregunta por el grado si hace falta.\n\nSolo puedes afirmar datos que aparezcan en INFORMACIÓN APROBADA. Si preguntan por fechas de examen, requisitos vigentes, cupos, colegiaturas, descuentos o pagos y esa información no está aprobada, di que admisiones la confirmará. No inventes ni prometas inscripción, aceptación, citas, fechas, costos o disponibilidad. No pidas ni proceses documentos del menor. No presiones para compartir datos. Pregunta una cosa a la vez: nivel o grado de interés, y ofrece conocer el campus. Si piden hablar con alguien, confirma que el equipo dará seguimiento. Nunca menciones herramientas ni el sistema.\n\nINFORMACIÓN APROBADA:\n${verified || "Solo está confirmado que el CUM ofrece secundaria y preparatoria en Mérida. No hay fechas ni costos aprobados."}` },
@@ -124,11 +125,15 @@ export async function runAdmissionsAgent(input: {
     }
   }
 
+  if (attachments.length) {
+    const image = attachments.some((item) => item.kind === "image");
+    const document = attachments.some((item) => item.kind === "document");
+    reply = `Claro, te comparto ${image && document ? "la guía visual y el PDF" : image ? "la guía visual" : "el PDF"} de admisiones. Son materiales de demostración; el equipo del CUM confirmará fechas, requisitos y costos vigentes.`;
+  }
   if (!input.prospect.privacyNoticeAt && input.tenant.privacyNoticeUrl) {
     reply += `\n\nAviso de privacidad: ${input.tenant.privacyNoticeUrl}`;
     await input.db.update(prospects).set({ privacyNoticeAt: now }).where(eq(prospects.id, input.prospect.id));
   }
-  if (attachments.length) reply += "\n\nTe comparto una guía inicial de demostración. El equipo del CUM confirmará los detalles vigentes.";
   if (!level && !input.prospect.educationLevel) attachments.push({
     kind: "buttons", body: "¿Qué nivel les interesa?", buttons: [
       { title: "Secundaria", reply: "Me interesa secundaria" },
@@ -136,5 +141,5 @@ export async function runAdmissionsAgent(input: {
       { title: "Hablar con asesor", reply: "Quiero hablar con un asesor" },
     ],
   });
-  return { reply, draft, toolTrace: [], blocked, attachments, modelsUsed: deterministic ? [] : [model], neurons, latencyMs: Date.now() - started, escalation, fallback, deterministic };
+  return { reply, draft, toolTrace: [], blocked, attachments, modelsUsed: deterministic || attachments.length ? [] : [model], neurons, latencyMs: Date.now() - started, escalation, fallback, deterministic: deterministic || attachments.length > 0 };
 }

@@ -35,6 +35,18 @@ const SCORE_RANGE: Record<NonNullable<ProspectFilters["temperature"]>, [number, 
 
 const assignee = alias(users, "assignee");
 
+// SQLite LIKE no ignora tildes. Plegar los caracteres habituales permite que
+// "canche" encuentre "Canché" sin depender de extensiones SQL externas.
+function searchable(column: typeof prospects.name | typeof prospects.profileName | typeof prospects.studentName | typeof prospects.email) {
+  let value = sql`${column}`;
+  for (const [accented, plain] of Object.entries({ á: "a", é: "e", í: "i", ó: "o", ú: "u", ü: "u", ñ: "n", Á: "a", É: "e", Í: "i", Ó: "o", Ú: "u", Ü: "u", Ñ: "n" })) {
+    value = sql`replace(${value}, ${accented}, ${plain})`;
+  }
+  return sql`lower(${value})`;
+}
+
+const fold = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ñ/gi, "n").toLowerCase();
+
 export function prospectWhere(tenant: Pick<typeof tenants.$inferSelect, "id" | "timezone">, principal: Principal, f: ProspectFilters) {
   const q = f.q?.trim();
   const digits = q?.replace(/\D/g, "") ?? "";
@@ -44,9 +56,9 @@ export function prospectWhere(tenant: Pick<typeof tenants.$inferSelect, "id" | "
     prospectScope(principal),
     q
       ? or(
-          like(prospects.name, `%${q}%`),
-          like(prospects.profileName, `%${q}%`),
-          like(prospects.studentName, `%${q}%`),
+          sql`${searchable(prospects.name)} like ${`%${fold(q)}%`}`,
+          sql`${searchable(prospects.profileName)} like ${`%${fold(q)}%`}`,
+          sql`${searchable(prospects.studentName)} like ${`%${fold(q)}%`}`,
           like(prospects.email, `%${q}%`),
           digits.length >= 4 ? like(prospects.phone, `%${digits}%`) : undefined,
         )

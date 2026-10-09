@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, useRef, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router";
-import { ArrowLeft, ArrowRight, BarChart3, Bot, CalendarClock, CheckCircle2, ContactRound, GraduationCap, Mail, MessageCircle, Plus, RefreshCw, Search, Send, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, BarChart3, Bot, CalendarClock, CheckCheck, CheckCircle2, ContactRound, GraduationCap, LayoutGrid, List, MessageCircle, MoreVertical, Plus, Search, Send, Users } from "lucide-react";
 import { Empty, ErrorAlert, PageHeader, Spinner } from "../components/ui";
 import { MessageContent } from "../components/MessageContent";
 import { useAddNote, useChangeStage, useProspect, useProspects, useSimulatorHistory, useSimulatorReset, useSimulatorSend } from "../lib/api";
@@ -9,6 +9,8 @@ import { apiFetch } from "../lib/api-client";
 import { useSession } from "../lib/session";
 import type { Prospect, ProspectStage } from "../lib/types";
 import "../styles/admisiones.css";
+import "../styles/admissions-wa.css";
+import { AdmissionsBI, type AdmissionsReportData } from "./AdmissionsBI";
 
 const STAGES: { value: ProspectStage; label: string }[] = [
   { value: "new", label: "Nuevo" },
@@ -24,7 +26,7 @@ const stageName = (value: string) => STAGES.find((item) => item.value === value)
 const nameOf = (lead: Prospect) => lead.name ?? lead.profileName ?? "Familia sin nombre";
 const phoneOf = (phone: string) => /^\d{10,15}$/.test(phone) ? `+${phone}` : "Sin teléfono";
 
-type Report = { total: number; newLast48h: number; followupsDue: number; byStage: Record<string, number>; byChannel: Record<string, number>; byLevel: Record<string, number> };
+type Report = AdmissionsReportData;
 
 function useAdmissionsReport() {
   const { tenant } = useSession();
@@ -57,32 +59,12 @@ export function AdmissionsDashboard() {
   </div>;
 }
 
-const CHANNEL_LABEL: Record<string, string> = { ...CHANNEL, simulator: "Simulador" };
-const LEVEL_LABEL: Record<string, string> = { secundaria: "Secundaria", preparatoria: "Preparatoria" };
-
 export function AdmissionsReports() {
   const report = useAdmissionsReport();
-  const data = report.data;
-  const maxStage = Math.max(1, ...Object.values(data?.byStage ?? {}));
-  return <div className="page admissions-page">
-    <PageHeader title="Reportes de admisiones" subtitle="Una lectura rápida del interés recibido y los seguimientos por hacer." actions={<button className="btn" onClick={() => void report.refetch()} disabled={report.isFetching}><RefreshCw size={16} /> Actualizar</button>} />
-    <ErrorAlert error={report.error} />
-    {report.isPending ? <Spinner /> : data && <>
-      <div className="admissions-kpis">
-        <div className="card admissions-kpi"><Users size={19} /><span>Familias registradas</span><strong>{data.total}</strong></div>
-        <div className="card admissions-kpi"><MessageCircle size={19} /><span>Nuevas en 48 horas</span><strong>{data.newLast48h}</strong></div>
-        <div className="card admissions-kpi"><CalendarClock size={19} /><span>Seguimientos pendientes</span><strong>{data.followupsDue}</strong></div>
-        <div className="card admissions-kpi"><CheckCircle2 size={19} /><span>Inscripciones confirmadas</span><strong>{data.byStage.won ?? 0}</strong></div>
-      </div>
-      <div className="admissions-grid">
-        <section className="card admissions-panel"><h2>Embudo de admisiones</h2><div className="admissions-funnel">{STAGES.map((stage) => <div key={stage.value}><span>{stage.label}</span><div className="admissions-bar"><i style={{ width: `${(data.byStage[stage.value] ?? 0) / maxStage * 100}%` }} /></div><strong>{data.byStage[stage.value] ?? 0}</strong></div>)}</div></section>
-        <section className="card admissions-panel"><h2>Origen de las familias</h2><div className="admissions-report-list">{Object.entries(data.byChannel).filter(([, count]) => count > 0).map(([channel, count]) => <div key={channel}><span>{CHANNEL_LABEL[channel] ?? channel}</span><strong>{count}</strong></div>)}{Object.values(data.byChannel).every((count) => !count) && <p className="muted">Todavía no hay contactos registrados.</p>}</div><h2 className="admissions-report-subtitle">Nivel de interés</h2><div className="admissions-report-list">{Object.entries(data.byLevel).filter(([, count]) => count > 0).map(([level, count]) => <div key={level}><span>{LEVEL_LABEL[level] ?? "Por confirmar"}</span><strong>{count}</strong></div>)}</div></section>
-      </div>
-      <p className="admissions-report-note">Las cifras se actualizan desde el CRM. “Nuevas en 48 horas” permite revisar el avance cada dos días sin esperar un envío automático.</p>
-      <Link className="btn btn--primary" to="/admisiones"><ContactRound size={16} /> Revisar familias y conversaciones</Link>
-    </>}
-  </div>;
+  return <AdmissionsBI data={report.data} pending={report.isPending} error={report.error} refreshing={report.isFetching} onRefresh={() => void report.refetch()} />;
 }
+
+const LEVEL_LABEL: Record<string, string> = { secundaria: "Secundaria", preparatoria: "Preparatoria" };
 
 type LeadForm = { name: string; phone: string; email: string; studentName: string; educationLevel: "" | "secundaria" | "preparatoria"; targetGrade: string; leadChannel: "whatsapp" | "correo" | "web" | "telefono" | "presencial" };
 const blank: LeadForm = { name: "", phone: "", email: "", studentName: "", educationLevel: "", targetGrade: "", leadChannel: "correo" };
@@ -95,6 +77,8 @@ export function AdmissionsLeads() {
   const [query, setQuery] = useState("");
   const [stageFilter, setStageFilter] = useState<ProspectStage | "all">("all");
   const [levelFilter, setLevelFilter] = useState<"all" | "secundaria" | "preparatoria">("all");
+  const [view, setView] = useState<"kanban" | "list">("kanban");
+  const [limit, setLimit] = useState(200);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<LeadForm>(blank);
   const report = useAdmissionsReport();
@@ -103,18 +87,25 @@ export function AdmissionsLeads() {
     ...(query ? { q: query } : {}),
     ...(stageFilter !== "all" ? { stage: stageFilter } : {}),
     ...(levelFilter !== "all" ? { educationLevel: levelFilter } : {}),
-  }, 200);
+  }, limit);
+  const changeStage = useChangeStage();
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [over, setOver] = useState<ProspectStage | null>(null);
   const create = useMutation({ mutationFn: () => apiFetch<Prospect>(`/api/admin/tenants/${encodeURIComponent(tenant)}/prospects`, { method: "POST", body: JSON.stringify({ ...form, educationLevel: form.educationLevel || undefined }) }), onSuccess: (lead) => { void qc.invalidateQueries({ queryKey: [tenant] }); setOpen(false); setForm(blank); navigate(`/admisiones/${lead.id}`); } });
   const allLeads = leads.data?.items ?? [];
   const shown = allLeads;
   const total = report.data?.total ?? leads.data?.total ?? allLeads.length;
   const stageCount = (stage: ProspectStage) => report.data?.byStage[stage] ?? allLeads.filter((lead) => lead.stage === stage).length;
+  const move = (lead: Prospect, next: ProspectStage) => {
+    if (lead.stage === next || changeStage.isPending) return;
+    changeStage.mutate({ id: lead.id, stage: next, ...(next === "lost" ? { reason: "Sin continuidad en la demo" } : {}) }, { onSuccess: () => void qc.invalidateQueries({ queryKey: [tenant, "admissions-report"] }) });
+  };
   return <div className="page admissions-page">
     <PageHeader title="CRM de admisiones" subtitle="Cada familia, conversación y siguiente paso en un solo lugar." actions={<button className="btn btn--primary" onClick={() => setOpen((value) => !value)}><Plus size={16} /> Nueva familia</button>} />
     <div className="admissions-crm-intro"><div className="admissions-crm-intro__icon"><ContactRound size={27} /></div><div><strong>De la primera consulta a la inscripción</strong><span>Registra el interés, cambia la etapa y programa el próximo contacto desde la ficha de cada familia.</span></div></div>
     <div className="admissions-crm-summary" aria-label="Resumen del CRM">
       <div className="card"><Users size={18} /><span>Familias registradas</span><strong>{total}</strong></div>
-      <div className="card"><MessageCircle size={18} /><span>Nuevas</span><strong>{stageCount("new")}</strong></div>
+      <div className="card"><MessageCircle size={18} /><span>Etapa: Nuevo</span><strong>{stageCount("new")}</strong></div>
       <div className="card"><CalendarClock size={18} /><span>Visitas por coordinar</span><strong>{stageCount("appointment")}</strong></div>
       <div className="card"><CheckCircle2 size={18} /><span>Inscripciones</span><strong>{stageCount("won")}</strong></div>
     </div>
@@ -133,9 +124,9 @@ export function AdmissionsLeads() {
       <button className={stageFilter === "all" ? "is-active" : ""} onClick={() => setStageFilter("all")}>Todas <span>{total}</span></button>
       {STAGES.map((stage) => <button key={stage.value} className={stageFilter === stage.value ? "is-active" : ""} onClick={() => setStageFilter(stage.value)}>{stage.label} <span>{stageCount(stage.value)}</span></button>)}
     </div>
-    <div className="admissions-toolbar"><Search size={17} /><input className="input" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar familia, estudiante o contacto" aria-label="Buscar en el CRM" /><select className="select" value={levelFilter} onChange={(event) => setLevelFilter(event.target.value as typeof levelFilter)} aria-label="Filtrar por nivel"><option value="all">Todos los niveles</option><option value="secundaria">Secundaria</option><option value="preparatoria">Preparatoria</option></select><span>{leads.data?.total ?? shown.length} resultados · {total} familias</span></div>
-    {(leads.data?.total ?? 0) > shown.length && <p className="muted">Se muestran los primeros {shown.length} resultados. Usa la búsqueda o los filtros para ver otros.</p>}
-    <ErrorAlert error={leads.error} />{leads.isPending ? <Spinner /> : shown.length ? <div className="card admissions-table"><table><thead><tr><th>Familia</th><th>Interés</th><th>Etapa</th><th>Canal</th><th>Próximo contacto</th></tr></thead><tbody>{shown.map((lead) => <tr key={lead.id} onClick={() => navigate(`/admisiones/${lead.id}`)}><td><Link to={`/admisiones/${lead.id}`}><strong>{nameOf(lead)}</strong><small>{lead.email ?? phoneOf(lead.phone)}</small></Link></td><td>{lead.educationLevel ?? "Por confirmar"}{lead.targetGrade ? ` · ${lead.targetGrade}` : ""}</td><td><span className="admissions-stage">{stageName(lead.stage)}</span></td><td>{CHANNEL[lead.leadChannel ?? ""] ?? "Simulador"}</td><td>{lead.nextFollowupAt ? date(lead.nextFollowupAt) : "—"}</td></tr>)}</tbody></table></div> : <Empty title="No hay familias con estos filtros" />}
+    <div className="admissions-toolbar"><Search size={17} /><input className="input" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar familia, estudiante o contacto" aria-label="Buscar en el CRM" /><select className="select" value={levelFilter} onChange={(event) => setLevelFilter(event.target.value as typeof levelFilter)} aria-label="Filtrar por nivel"><option value="all">Todos los niveles</option><option value="secundaria">Secundaria</option><option value="preparatoria">Preparatoria</option></select><span>{leads.data?.total ?? shown.length} {leads.data?.total === 1 ? "resultado" : "resultados"} · {total} familias</span><div className="admissions-view-switch" role="group" aria-label="Vista del CRM"><button type="button" className={view === "kanban" ? "is-active" : ""} aria-pressed={view === "kanban"} onClick={() => setView("kanban")}><LayoutGrid size={15} /> Kanban</button><button type="button" className={view === "list" ? "is-active" : ""} aria-pressed={view === "list"} onClick={() => setView("list")}><List size={15} /> Lista</button></div></div>
+    <ErrorAlert error={leads.error} /><ErrorAlert error={changeStage.error} />{leads.isPending ? <Spinner /> : shown.length ? view === "kanban" ? <div className="admissions-kanban" aria-label="Tablero de admisiones">{STAGES.map((stage) => { const items = shown.filter((lead) => lead.stage === stage.value); return <section key={stage.value} className={`admissions-kanban__column admissions-kanban__column--${stage.value}${over === stage.value ? " is-over" : ""}`} aria-label={stage.label} onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; setOver(stage.value); }} onDragLeave={() => setOver((current) => current === stage.value ? null : current)} onDrop={(event) => { event.preventDefault(); setOver(null); const lead = shown.find((item) => item.id === event.dataTransfer.getData("text/plain")); if (lead) move(lead, stage.value); }}><header><span>{stage.label}</span><strong>{items.length}</strong></header><div className="admissions-kanban__cards">{items.map((lead) => <article key={lead.id} className={`admissions-kanban__card${dragging === lead.id ? " is-dragging" : ""}`} draggable onDragStart={(event) => { event.dataTransfer.setData("text/plain", lead.id); event.dataTransfer.effectAllowed = "move"; setDragging(lead.id); }} onDragEnd={() => { setDragging(null); setOver(null); }}><Link to={`/admisiones/${lead.id}`} className="admissions-kanban__name">{nameOf(lead)}<ArrowRight size={14} /></Link><span className="admissions-kanban__level">{lead.educationLevel ? LEVEL_LABEL[lead.educationLevel] : "Nivel por confirmar"}{lead.targetGrade ? ` · ${lead.targetGrade}` : ""}</span><div className="admissions-kanban__meta"><span>{CHANNEL[lead.leadChannel ?? ""] ?? "Simulador"}</span><span>{lead.messageCount} mensajes</span></div>{lead.nextFollowupAt && <div className={`admissions-kanban__followup${lead.nextFollowupAt < Date.now() ? " is-due" : ""}`}><CalendarClock size={13} /> {date(lead.nextFollowupAt)}</div>}<label className="admissions-kanban__move">Mover a<select className="select" aria-label={`Mover a ${nameOf(lead)}`} value={lead.stage} disabled={changeStage.isPending} onChange={(event) => move(lead, event.target.value as ProspectStage)}>{STAGES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label></article>)}{items.length === 0 && <p className="admissions-kanban__empty">Arrastra aquí una familia</p>}</div></section>; })}</div> : <div className="card admissions-table"><table><thead><tr><th>Familia</th><th>Interés</th><th>Etapa</th><th>Canal</th><th>Próximo contacto</th></tr></thead><tbody>{shown.map((lead) => <tr key={lead.id} onClick={() => navigate(`/admisiones/${lead.id}`)}><td><Link to={`/admisiones/${lead.id}`}><strong>{nameOf(lead)}</strong><small>{lead.email ?? phoneOf(lead.phone)}</small></Link></td><td>{lead.educationLevel ?? "Por confirmar"}{lead.targetGrade ? ` · ${lead.targetGrade}` : ""}</td><td><span className="admissions-stage">{stageName(lead.stage)}</span></td><td>{CHANNEL[lead.leadChannel ?? ""] ?? "Simulador"}</td><td>{lead.nextFollowupAt ? date(lead.nextFollowupAt) : "—"}</td></tr>)}</tbody></table></div> : <Empty title="No hay familias con estos filtros" />}
+    {(leads.data?.total ?? 0) > shown.length && <div className="admissions-load-more"><button className="btn" disabled={leads.isFetching} onClick={() => setLimit((current) => current + 200)}>{leads.isFetching ? "Cargando…" : `Cargar ${Math.min(200, (leads.data?.total ?? 0) - shown.length)} más`}</button></div>}
   </div>;
 }
 
@@ -164,7 +155,43 @@ export function AdmissionsDetail() {
 
 const SUGGESTIONS = ["Hola, quiero información para secundaria", "¿Cuándo es el examen de admisión?", "¿Cuánto cuesta la preparatoria?", "¿Podemos conocer el colegio?", "¿Me compartes un flyer de la escuela?", "¿Tienen una guía de admisiones en PDF?"];
 export function AdmissionsSimulator() {
-  const history = useSimulatorHistory(); const send = useSimulatorSend(); const reset = useSimulatorReset(); const [text, setText] = useState("");
+  const history = useSimulatorHistory();
+  const send = useSimulatorSend();
+  const reset = useSimulatorReset();
+  const [text, setText] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const messages = history.data?.messages ?? [];
+  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages.length]);
   function submit(event: FormEvent) { event.preventDefault(); if (!text.trim()) return; send.mutate({ message: text.trim() }, { onSuccess: () => setText("") }); }
-  return <div className="page admissions-page"><PageHeader title="Probar a Lynna" subtitle="Simula una conversación de WhatsApp con una familia. La respuesta queda registrada en el CRM." actions={<button className="btn" onClick={() => reset.mutate()} disabled={reset.isPending}>Nueva conversación</button>} /><div className="admissions-simulator"><section className="card admissions-chat"><div className="admissions-chat__head"><Bot size={20} /><strong>Lynna · Admisiones CUM</strong><span>Simulador</span></div><div className="admissions-messages">{history.isPending ? <Spinner /> : history.data?.messages.length ? history.data.messages.map((message) => <div className={`admissions-message admissions-message--${message.direction}`} key={message.id}><div className="admissions-message__content"><MessageContent m={message} /></div><small>{message.direction === "in" ? "Familia" : "Lynna"} · {date(message.createdAt)}</small></div>) : <div className="admissions-chat__empty">Escribe como lo haría una familia interesada en el CUM.</div>}</div><form onSubmit={submit} className="admissions-chat__compose"><input className="input" value={text} onChange={(event) => setText(event.target.value)} placeholder="Escribe un mensaje…" /><button className="btn btn--primary" disabled={send.isPending || !text.trim()}><Send size={16} /></button></form><ErrorAlert error={send.error} /></section><aside className="card admissions-panel"><h2>Prueba estas preguntas</h2><div className="admissions-suggestions">{SUGGESTIONS.map((example) => <button className="btn" key={example} onClick={() => send.mutate({ message: example })} disabled={send.isPending}>{example}</button>)}</div><p className="muted">La asistente ofrece información aprobada y pasa fechas, costos y visitas al equipo humano. El simulador no envía mensajes reales.</p><div className="admissions-material"><img src="/materiales/guia-admisiones-demo.png" alt="Vista previa de la guía visual de admisiones" loading="lazy" /><strong>Material para compartir</strong><span>Guía visual y PDF conceptuales para esta demo. El bot los adjunta cuando la familia los solicita.</span><div className="row"><a href="/materiales/guia-admisiones-demo.png" target="_blank" rel="noreferrer">Ver imagen</a><a href="/materiales/guia-admisiones-demo.pdf" target="_blank" rel="noreferrer">Ver PDF</a></div></div>{send.data?.prospect?.educationLevel && <div className="admissions-captured"><GraduationCap size={18} /> Interés detectado: {send.data.prospect.educationLevel}</div>}<Link className="btn" to="/admisiones"><Mail size={16} /> Revisar contactos</Link></aside></div></div>;
+  const last = messages.at(-1);
+  const time = (ms: number) => new Intl.DateTimeFormat("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Merida" }).format(ms);
+  return <div className="page admissions-page admissions-wa-page">
+    <PageHeader title="Probar a Lynna" subtitle="Conversa como una familia interesada en el CUM. El asistente registra la interacción en el CRM." />
+    <div className="admissions-wa-shell">
+      <aside className="admissions-wa-sidebar" aria-label="Opciones de la demostración">
+        <div className="admissions-wa-sidebar__top"><span className="admissions-wa-sidebar__avatar">C</span><strong>Demo de admisiones</strong><span className="admissions-wa-sidebar__menu"><MoreVertical size={19} /></span></div>
+        <div className="admissions-wa-sidebar__search"><Search size={16} /> Conversaciones de prueba</div>
+        <button className="admissions-wa-contact" type="button" onClick={() => scrollRef.current?.focus()}><span className="admissions-wa-contact__avatar"><img src="/cum-logo.png" alt="" /></span><span><strong>Lynna · CUM</strong><small>{last?.body?.slice(0, 52) ?? "Inicia una conversación"}</small></span><time>{last ? time(last.createdAt) : ""}</time></button>
+        <div className="admissions-wa-sidebar__body"><h2>Preguntas para probar</h2><div className="admissions-wa-prompts">{SUGGESTIONS.map((example) => <button type="button" key={example} onClick={() => send.mutate({ message: example })} disabled={send.isPending}>{example}</button>)}</div></div>
+        <div className="admissions-wa-sidebar__foot"><button className="btn" type="button" onClick={() => reset.mutate()} disabled={reset.isPending}>Nueva conversación</button><Link to="/admisiones">Ver en el CRM <ArrowRight size={15} /></Link></div>
+      </aside>
+      <section className="admissions-wa-conversation" aria-label="Chat simulado con Lynna">
+        <header className="admissions-wa-conversation__header"><span className="admissions-wa-contact__avatar"><img src="/cum-logo.png" alt="" /></span><span><strong>Lynna · Admisiones CUM</strong><small>Asistente de admisiones · demo</small></span><span className="admissions-wa-conversation__badge">SIMULADOR</span></header>
+        <div className="admissions-wa-chat" ref={scrollRef} tabIndex={0} aria-label="Historial de la conversación simulada" onKeyDown={(event) => {
+          if (event.target !== event.currentTarget) return;
+          const step = event.key === "ArrowDown" ? 48 : event.key === "ArrowUp" ? -48 : event.key === "PageDown" ? event.currentTarget.clientHeight * .8 : event.key === "PageUp" ? -event.currentTarget.clientHeight * .8 : null;
+          if (step !== null) { event.preventDefault(); event.currentTarget.scrollBy({ top: step }); }
+          if (event.key === "Home" || event.key === "End") { event.preventDefault(); event.currentTarget.scrollTop = event.key === "Home" ? 0 : event.currentTarget.scrollHeight; }
+        }}>
+          <div className="admissions-wa-date">{new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "long", year: "numeric", timeZone: "America/Merida" }).format(messages[0]?.createdAt ?? Date.now())}</div>
+          <div className="admissions-wa-notice">Esta conversación es una prueba dentro de Lynna. No envía mensajes a WhatsApp.</div>
+          {history.isPending ? <Spinner /> : messages.length ? messages.map((message) => <div className={`admissions-wa-bubble admissions-wa-bubble--${message.direction === "in" ? "family" : "lynna"}`} key={message.id}><div className="admissions-wa-bubble__content"><MessageContent m={message} /></div><div className="admissions-wa-bubble__meta">{time(message.createdAt)}{message.direction === "in" && <CheckCheck size={14} aria-label="Mensaje de prueba registrado" />}</div></div>) : <div className="admissions-wa-empty"><MessageCircle size={30} /><strong>Hola, soy Lynna</strong><span>Escribe una pregunta sobre admisiones o elige una de la lista para ver cómo respondería.</span></div>}
+          {send.isPending && <div className="admissions-wa-typing"><span /><span /><span /> Lynna está respondiendo</div>}
+        </div>
+        <form className="admissions-wa-compose" onSubmit={submit}><input value={text} onChange={(event) => setText(event.target.value)} placeholder="Escribe un mensaje" aria-label="Mensaje para el simulador" /><button type="submit" disabled={send.isPending || !text.trim()} aria-label="Enviar mensaje de prueba"><Send size={19} /></button></form>
+        <ErrorAlert error={send.error ?? reset.error ?? history.error} />
+      </section>
+    </div>
+    <div className="admissions-wa-below"><div><strong>Material de demostración</strong><span>La asistente adjunta la imagen o el PDF cuando se los pides en el chat.</span></div><a href="/materiales/guia-admisiones-demo.png" target="_blank" rel="noreferrer">Ver imagen</a><a href="/materiales/guia-admisiones-demo.pdf" target="_blank" rel="noreferrer">Ver PDF</a>{send.data?.prospect?.educationLevel && <span className="admissions-wa-level"><GraduationCap size={16} /> Interés: {send.data.prospect.educationLevel}</span>}</div>
+  </div>;
 }

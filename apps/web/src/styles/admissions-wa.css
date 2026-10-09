@@ -1,0 +1,65 @@
+.admissions-wa-page { max-width: 1440px; }
+.admissions-wa-shell { display: grid; grid-template-columns: 310px minmax(0,1fr); grid-template-rows: minmax(0,1fr); height: clamp(390px, calc(100dvh - 205px), 710px); overflow: hidden; border: 1px solid #d8e0e3; border-radius: 12px; background: #fff; box-shadow: 0 16px 45px rgba(17,51,68,.11); }
+.admissions-wa-sidebar { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid #dce5e8; background: #fff; }
+.admissions-wa-sidebar__top { display: flex; align-items: center; gap: 11px; height: 67px; padding: 10px 18px; background: #f0f2f5; color: #273e48; font-size: 13px; }
+.admissions-wa-sidebar__avatar { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #e4d4aa; color: #29463d; font-weight: 800; }
+.admissions-wa-sidebar__menu { margin-left: auto; color: #637781; }
+.admissions-wa-sidebar__search { display: flex; align-items: center; gap: 9px; margin: 10px 13px; padding: 9px 12px; border-radius: 8px; background: #f1f4f5; color: #87959d; font-size: 12px; }
+.admissions-wa-contact { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 14px; border: 0; border-left: 4px solid #1f9b70; background: #f3f8f5; color: #233b42; text-align: left; cursor: pointer; }
+.admissions-wa-contact > span:nth-child(2) { display: grid; gap: 5px; min-width: 0; }
+.admissions-wa-contact strong { font-size: 13px; }
+.admissions-wa-contact small { max-width: 170px; overflow: hidden; color: #65747b; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.admissions-wa-contact time { align-self: flex-start; margin-left: auto; color: #819197; font-size: 10px; white-space: nowrap; }
+.admissions-wa-contact__avatar { display: grid; place-items: center; width: 42px; height: 42px; flex: none; overflow: hidden; border-radius: 50%; background: #e5ece4; }
+.admissions-wa-contact__avatar img { width: 100%; height: 100%; object-fit: cover; }
+.admissions-wa-sidebar__body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 18px 16px; }
+.admissions-wa-sidebar__body h2 { margin: 0 0 11px; color: #536971; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.admissions-wa-prompts { display: grid; gap: 7px; }
+.admissions-wa-prompts button { padding: 9px 10px; border: 1px solid #e0e9e6; border-radius: 8px; background: #f9fbfa; color: #315d54; font: inherit; font-size: 11px; line-height: 1.35; text-align: left; cursor: pointer; }
+.admissions-wa-prompts button:hover { border-color: #8bbfad; background: #eef8f3; }
+.admissions-wa-prompts button:disabled { opacity: .5; cursor: wait; }
+.admissions-wa-sidebar__foot { display: flex; align-items: center; gap: 10px; padding: 13px 15px; border-top: 1px solid #e8eeee; }
+.admissions-wa-sidebar__foot .btn { padding: 8px 10px; font-size: 11px; white-space: nowrap; }
+.admissions-wa-sidebar__foot a { display: inline-flex; align-items: center; gap: 4px; color: #1e7464; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.admissions-wa-conversation { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: #efeae2; }
+.admissions-wa-conversation__header { display: flex; align-items: center; gap: 11px; height: 67px; padding: 9px 19px; border-bottom: 1px solid #d8dfdf; background: #f0f2f5; }
+.admissions-wa-conversation__header > span:nth-child(2) { display: grid; gap: 3px; }
+.admissions-wa-conversation__header strong { color: #23373f; font-size: 14px; }
+.admissions-wa-conversation__header small { color: #6d7f86; font-size: 11px; }
+.admissions-wa-conversation__badge { margin-left: auto; padding: 5px 8px; border-radius: 5px; background: #e5eee9; color: #39745f; font-size: 10px; font-weight: 800; letter-spacing: .06em; }
+.admissions-wa-chat { display: flex; flex: 1 1 0; flex-direction: column; gap: 9px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 20px clamp(18px, 7%, 76px); background-color: #efeae2; background-image: radial-gradient(#d3cec3 0.8px, transparent 0.8px), radial-gradient(#fffaf1 0.9px, transparent 0.9px); background-position: 0 0, 13px 19px; background-size: 36px 36px; }
+.admissions-wa-chat:focus-visible { outline: 2px solid #1d956c; outline-offset: -3px; }
+.admissions-wa-date { align-self: center; padding: 6px 10px; border-radius: 6px; background: #fffdf8; color: #677985; box-shadow: 0 1px 3px rgba(0,0,0,.08); font-size: 11px; text-transform: capitalize; }
+.admissions-wa-notice { align-self: center; max-width: 470px; margin-bottom: 8px; padding: 8px 12px; border-radius: 7px; background: #fff4d6; color: #786542; box-shadow: 0 1px 3px rgba(0,0,0,.06); font-size: 11px; text-align: center; }
+.admissions-wa-bubble { position: relative; max-width: min(78%, 570px); padding: 9px 11px 6px; border-radius: 9px; box-shadow: 0 1px 2px rgba(0,0,0,.12); color: #243338; font-size: 13px; line-height: 1.43; }
+.admissions-wa-bubble--lynna { align-self: flex-start; background: #fff; border-top-left-radius: 2px; }
+.admissions-wa-bubble--family { align-self: flex-end; background: #d9fdd3; border-top-right-radius: 2px; }
+.admissions-wa-bubble__content { overflow-wrap: anywhere; white-space: pre-wrap; }
+.admissions-wa-bubble__content .bubble__media { margin: 0; }
+.admissions-wa-bubble__content .bubble__media img { display: block; max-width: 100%; max-height: 320px; border-radius: 5px; }
+.admissions-wa-bubble__content .bubble__media figcaption { margin-top: 6px; }
+.admissions-wa-bubble__content .bubble__doc { display: inline-flex; align-items: center; gap: 8px; color: #1d6552; font-weight: 700; }
+.admissions-wa-bubble__meta { display: flex; align-items: center; justify-content: flex-end; gap: 3px; margin-top: 4px; color: #89969a; font-size: 10px; }
+.admissions-wa-bubble__meta svg { color: #60a9c0; }
+.admissions-wa-empty { display: grid; justify-items: center; gap: 8px; align-self: center; max-width: 280px; margin: auto; padding: 22px; border-radius: 12px; background: rgba(255,255,255,.9); color: #617780; font-size: 12px; text-align: center; }
+.admissions-wa-empty svg { color: #3c9d79; }
+.admissions-wa-empty strong { color: #243d45; font-size: 15px; }
+.admissions-wa-typing { display: flex; align-items: center; gap: 4px; align-self: flex-start; padding: 10px 13px; border-radius: 8px; background: #fff; color: #7c8c90; font-size: 11px; }
+.admissions-wa-typing span { width: 5px; height: 5px; border-radius: 50%; background: #73a393; animation: admissions-wa-pulse 1s infinite alternate; }
+.admissions-wa-typing span:nth-child(2) { animation-delay: .2s; }
+.admissions-wa-typing span:nth-child(3) { animation-delay: .4s; margin-right: 5px; }
+@keyframes admissions-wa-pulse { to { opacity: .25; transform: translateY(-2px); } }
+.admissions-wa-compose { display: flex; align-items: center; gap: 10px; padding: 12px 17px; background: #f0f2f5; }
+.admissions-wa-compose input { flex: 1; min-width: 0; padding: 12px 16px; border: 0; border-radius: 9px; outline: none; background: #fff; color: #263941; font: inherit; font-size: 13px; }
+.admissions-wa-compose input:focus { box-shadow: 0 0 0 2px #9bd2b6; }
+.admissions-wa-compose button { display: grid; place-items: center; width: 39px; height: 39px; border: 0; border-radius: 50%; background: #1d956c; color: #fff; cursor: pointer; }
+.admissions-wa-compose button:disabled { background: #aebeb9; cursor: default; }
+.admissions-wa-below { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 14px; padding: 12px 16px; border: 1px solid #dce8e4; border-radius: 9px; background: #f7fbf8; font-size: 12px; }
+.admissions-wa-below > div { display: grid; gap: 2px; margin-right: auto; }
+.admissions-wa-below strong { color: #294b43; }
+.admissions-wa-below span { color: #688078; }
+.admissions-wa-below a { color: #1b7460; font-weight: 700; white-space: nowrap; }
+.admissions-wa-level { display: inline-flex; align-items: center; gap: 4px; }
+@media (max-width: 900px) { .admissions-wa-shell { grid-template-columns: 245px minmax(0,1fr); } .admissions-wa-sidebar__foot { flex-wrap: wrap; } }
+@media (max-width: 680px) { .admissions-wa-shell { display: flex; flex-direction: column; height: clamp(420px, calc(100dvh - 185px), 740px); } .admissions-wa-sidebar { flex: none; border-right: 0; border-bottom: 1px solid #dce5e8; } .admissions-wa-sidebar__top, .admissions-wa-sidebar__search, .admissions-wa-sidebar__body, .admissions-wa-sidebar__foot { display: none; } .admissions-wa-contact { padding: 8px 12px; } .admissions-wa-conversation { min-height: 0; flex: 1; } .admissions-wa-chat { padding: 14px; } .admissions-wa-bubble { max-width: 90%; } }
+@media print { .admissions-wa-sidebar, .admissions-wa-compose, .admissions-wa-below { display: none !important; } .admissions-wa-shell { display: block; height: auto; min-height: 0; box-shadow: none; } .admissions-wa-chat { overflow: visible; } }
