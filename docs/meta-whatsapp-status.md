@@ -6,7 +6,7 @@ Estado comprobado el 9 de octubre de 2026. Esta integración usa exclusivamente 
 | --- | --- | --- |
 | Portafolio Lynna | `1661306175561939` | Verificación empresarial **aprobada** (`verified`) |
 | App Lynna Leads CUM | `28827682516871481` | Publicada; webhook activo |
-| Cuenta WhatsApp Lynna Leads | `4638362863156897` | Aprobada, pero inactiva |
+| Cuenta WhatsApp Lynna Leads | `4638362863156897` | Revisión aprobada; `status=ONBOARDING`, envío bloqueado |
 | Número | `1339518955915625` | Propiedad verificada por SMS; registro Cloud API pendiente |
 | Usuario del sistema Lynna Leads API | `61594877627036` | Acceso total a la app y a esta cuenta WhatsApp |
 
@@ -16,11 +16,11 @@ El dominio `31rooms.com` (Meta domain ID `1417281106559810`) está **Verificado*
 
 La consulta `GET /4638362863156897?fields=health_status` informa:
 
-- `141006`: la API de salud sigue informando un error de pago. La cuenta de facturación **Lynna Leads** (`payment_account_id=2112386169378291`, vinculada al asset WABA `4638362863156897`) mostró inicialmente **«No agregaste ningún método de pago»**. El propietario indicó después que agregó el pago en esa cuenta; falta confirmar que Meta lo haya aplicado, pues `health_status` aún muestra este error.
-- `141008`: la cuenta WhatsApp no está activa; Meta indica contactar a soporte de WhatsApp para activarla.
+- `141006`: la API de salud sigue informando un error de pago **aunque Billing Hub muestra un método Predeterminado** en la cuenta Lynna Leads del portafolio Lynna, con MXN y sin alertas. La navegación desde la ficha del número a «Cuentas de mensajes» y WhatsApp Manager conduce al asset interno `2356333361803876`, el mismo que usa Billing Hub. En esa vista la URL de pago contiene `payment_account_id=2110950789520273`; el ID `2112386169378291` documentado antes no apareció en la revisión y no debe usarse como prueba de vínculo. Meta no muestra explícitamente el método junto al ID Graph de la WABA. `GET /4638362863156897?fields=primary_funding_id` devuelve código `10` y dice que requiere un Business Solution Provider, así que este token no puede verificar el vínculo de financiación directamente.
+- `141008`: la WABA no está activa; `GET /4638362863156897?fields=status` devuelve `ONBOARDING`. Meta indica contactar a soporte de WhatsApp para activarla.
 
-El portafolio y la app ahora figuran `AVAILABLE`, pero la WABA sigue `BLOCKED` y el número `PENDING`. La cuenta de pago también mostró nombre comercial `-` y divisa vacía. WhatsApp Manager mostró «No tienes acceso a la cuenta de WhatsApp Business 4638362863156897», aunque Business Settings muestra a Danny Cen con acceso total al asset Lynna Leads (ID interno de interfaz `2356333361803876`). Este ID interno no responde como WABA en Graph; el ID API válido sigue siendo `4638362863156897`.
+El portafolio y la app figuran `AVAILABLE`, pero la WABA sigue `BLOCKED` y el número `PENDING`. WhatsApp Manager, abierto desde Business Settings, muestra el número y su estado **Pendiente**. Danny Cen tiene acceso total al asset interno `2356333361803876`; ese ID de interfaz no responde como WABA en Graph, donde el ID API válido sigue siendo `4638362863156897`.
 
 `POST /1339518955915625/register` con un token que tiene `whatsapp_business_messaging` y un PIN de seis dígitos sigue devolviendo `(#10) Application does not have permission for this action` incluso después de la verificación empresarial y después de que el propietario agregó el método de pago. No se debe repetir sin resolver primero el estado de la cuenta y confirmar que el pago se refleje en la WABA. El PIN no se guarda.
 
-Una prueba desde WhatsApp Web del propietario hacia +52 990 229 2345 mostró **«El número +52 990 229 2345 no está en WhatsApp»**. No se envió ningún mensaje ni se creó chat. Pendiente: asociar el método de pago a la cuenta Lynna Leads, recuperar acceso visual a la WABA y resolver su estado inactivo. Después, registrar el número, probar recepción y activar las respuestas automáticas para la demo. En la web, `AUTO_REPLY_MODE` permanece en `off` y los seguimientos automáticos del CUM están desactivados.
+Una prueba desde WhatsApp Web del propietario hacia +52 990 229 2345 mostró **«El número +52 990 229 2345 no está en WhatsApp»**. No se envió ningún mensaje ni se creó chat. Pendiente: que Meta aclare por qué `health_status` aún marca `141006` pese al pago visible y que resuelva `ONBOARDING`/`141008`. Después, registrar el número, probar recepción y activar las respuestas automáticas para la demo. En la web, `AUTO_REPLY_MODE` permanece en `off` y los seguimientos automáticos del CUM están desactivados.
