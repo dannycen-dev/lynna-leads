@@ -82,6 +82,9 @@ export function Login() {
           <p className="field__hint" style={{ textAlign: "center", margin: 0 }}>
             ¿Sin acceso? Pídelo al equipo administrador de la demo.
           </p>
+          <p className="field__hint" style={{ textAlign: "center", margin: 0 }}>
+            <a href="/privacidad.html" target="_blank" rel="noreferrer">Aviso de privacidad</a>
+          </p>
         </div>
       </form>
     </div>
